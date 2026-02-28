@@ -1,0 +1,39 @@
+namespace FusimAiAssiant.Models;
+
+public record LoginRequest(string Username, string Password);
+
+public record LoginResponse(bool Success, string Message, int UserId);
+
+public record VmomInputCatalogResponse(Dictionary<string, string> Fields, string TemplateInput);
+
+public record CreateCaseRequest(string Title, string InputContent);
+
+public record CreateCaseFromFormRequest(string Title, Dictionary<string, string> Fields);
+
+public record CaseListItem(
+    int Id,
+    string Title,
+    string Status,
+    DateTime CreatedAt,
+    DateTime UpdatedAt,
+    string? ErrorMessage);
+
+public record CaseOverviewResponse(
+    int TotalCount,
+    int RunningCount,
+    int SuccessCount,
+    int FailedCount,
+    IReadOnlyList<CaseListItem> RecentCases);
+
+public record VmomCaseDetail(
+    int Id,
+    int UserId,
+    string Title,
+    string Status,
+    DateTime CreatedAt,
+    DateTime UpdatedAt,
+    string? ErrorMessage,
+    string InputContent,
+    string RzText,
+    string EqprIotaText,
+    string VmomOutText);

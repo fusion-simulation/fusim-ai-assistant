@@ -1,0 +1,47 @@
+.shell-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.shell-link {
+    display: block;
+    text-decoration: none;
+    color: #204267;
+    border: 1px solid transparent;
+    border-radius: 0.55rem;
+    padding: 0.45rem 0.62rem;
+    font-size: 0.92rem;
+}
+
+.shell-link:hover {
+    background: #edf4ff;
+    border-color: #c5d9f4;
+}
+
+.shell-link.active {
+    background: #14477f;
+    color: #f6fbff;
+}
+
+.shell-user {
+    margin-top: 0.85rem;
+    font-size: 0.83rem;
+    color: #5b6573;
+    padding: 0 0.2rem;
+}
+
+.shell-logout {
+    margin-top: 0.25rem;
+    width: 100%;
+    border: 1px solid #d0dbeb;
+    border-radius: 0.5rem;
+    padding: 0.4rem 0.5rem;
+    background: #fff;
+    color: #2b3a49;
+    text-align: left;
+}
+
+.shell-logout:hover {
+    background: #edf3fb;
+}

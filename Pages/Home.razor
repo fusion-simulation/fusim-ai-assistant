@@ -1,0 +1,107 @@
+@page "/"
+@inject HttpClient Http
+@inject ClientSessionService Session
+@inject NavigationManager Navigation
+
+<PageTitle>主页</PageTitle>
+
+@if (!isReady)
+{
+    <div class="loading-box">加载概况中...</div>
+}
+else
+{
+    <section class="panel-card mb-3">
+        <h2 class="mb-3">算例概况</h2>
+        <div class="overview-grid">
+            <div class="overview-card">
+                <div class="overview-label">总算例</div>
+                <div class="overview-value">@overview.TotalCount</div>
+            </div>
+            <div class="overview-card">
+                <div class="overview-label">运行中</div>
+                <div class="overview-value">@overview.RunningCount</div>
+            </div>
+            <div class="overview-card">
+                <div class="overview-label">成功</div>
+                <div class="overview-value">@overview.SuccessCount</div>
+            </div>
+            <div class="overview-card">
+                <div class="overview-label">失败</div>
+                <div class="overview-value">@overview.FailedCount</div>
+            </div>
+        </div>
+    </section>
+
+    <section class="panel-card">
+        <div class="panel-head">
+            <h2 class="mb-0">最近算例</h2>
+            <button type="button" class="btn btn-sm btn-outline-primary" @onclick="LoadAsync">刷新</button>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div class="alert alert-danger">@errorMessage</div>
+        }
+        else if (overview.RecentCases.Count == 0)
+        {
+            <div class="empty-hint">暂无算例，先到“新建算例”提交。</div>
+        }
+        else
+        {
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>标题</th>
+                        <th>状态</th>
+                        <th>更新时间</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in overview.RecentCases)
+                    {
+                        <tr>
+                            <td>@item.Id</td>
+                            <td>@item.Title</td>
+                            <td><span class="status-tag status-@item.Status">@item.Status</span></td>
+                            <td>@item.UpdatedAt.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </section>
+}
+
+@code {
+    private bool isReady;
+    private string? errorMessage;
+    private CaseOverviewResponse overview = new(0, 0, 0, 0, Array.Empty<CaseListItem>());
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Session.IsLoggedIn)
+        {
+            Navigation.NavigateTo("/login", forceLoad: false);
+            return;
+        }
+
+        await LoadAsync();
+        isReady = true;
+    }
+
+    private async Task LoadAsync()
+    {
+        errorMessage = null;
+        try
+        {
+            overview = await Http.GetFromJsonAsync<CaseOverviewResponse>("api/vmom/overview")
+                ?? new CaseOverviewResponse(0, 0, 0, 0, Array.Empty<CaseListItem>());
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+}

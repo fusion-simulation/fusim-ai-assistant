@@ -1,0 +1,176 @@
+@page "/cases"
+@inject HttpClient Http
+@inject ClientSessionService Session
+@inject NavigationManager Navigation
+
+<PageTitle>算例列表</PageTitle>
+
+@if (!isReady)
+{
+    <div class="loading-box">加载算例中...</div>
+}
+else
+{
+    <div class="cases-grid">
+        <section class="panel-card">
+            <div class="panel-head">
+                <h2 class="mb-0">算例列表</h2>
+                <button type="button" class="btn btn-sm btn-outline-primary" @onclick="LoadCasesAsync">刷新</button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(errorMessage))
+            {
+                <div class="alert alert-danger">@errorMessage</div>
+            }
+            else if (cases.Count == 0)
+            {
+                <div class="empty-hint">暂无算例。</div>
+            }
+            else
+            {
+                <table class="table table-sm table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>标题</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in cases)
+                        {
+                            <tr class="case-row @(item.Id == selectedCaseId ? "row-selected" : string.Empty)" @onclick="() => SelectCaseAsync(item.Id)">
+                                <td>@item.Id</td>
+                                <td>@item.Title</td>
+                                <td><span class="status-tag status-@item.Status">@item.Status</span></td>
+                                <td>
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-secondary"
+                                            @onclick="() => BeginDownloadCase(item.Id)"
+                                            @onclick:stopPropagation="true">下载 zip</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </section>
+
+        <section class="panel-card">
+            <div class="panel-head">
+                <h2 class="mb-0">算例信息</h2>
+                @if (selectedCaseId.HasValue)
+                {
+                    <button type="button"
+                            class="btn btn-sm btn-outline-secondary"
+                            @onclick="() => BeginDownloadCase(selectedCaseId.Value)">下载当前算例 zip</button>
+                }
+            </div>
+
+            @if (selectedCase is null)
+            {
+                <div class="empty-hint">请选择算例后查看结果文件。</div>
+            }
+            else
+            {
+                @if (!string.IsNullOrWhiteSpace(selectedCase.ErrorMessage))
+                {
+                    <div class="alert alert-warning">@selectedCase.ErrorMessage</div>
+                }
+
+                <div class="mb-2">
+                    <span class="mono">caseId=@selectedCase.Id</span>
+                    <span class="mx-2">|</span>
+                    <span class="mono">状态=@selectedCase.Status</span>
+                </div>
+
+                <details open>
+                    <summary>RZ.txt</summary>
+                    <pre class="file-preview">@selectedCase.RzText</pre>
+                </details>
+
+                <details>
+                    <summary>eqpr_iota.txt</summary>
+                    <pre class="file-preview">@selectedCase.EqprIotaText</pre>
+                </details>
+
+                <details>
+                    <summary>vmom.out</summary>
+                    <pre class="file-preview">@selectedCase.VmomOutText</pre>
+                </details>
+            }
+        </section>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(downloadUrl))
+    {
+        <iframe class="download-frame" src="@downloadUrl" title="case-download"></iframe>
+    }
+}
+
+@code {
+    private bool isReady;
+    private string? errorMessage;
+    private IReadOnlyList<CaseListItem> cases = Array.Empty<CaseListItem>();
+    private VmomCaseDetail? selectedCase;
+    private int? selectedCaseId;
+    private string? downloadUrl;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Session.IsLoggedIn)
+        {
+            Navigation.NavigateTo("/login", forceLoad: false);
+            return;
+        }
+
+        await LoadCasesAsync();
+        isReady = true;
+    }
+
+    private async Task LoadCasesAsync()
+    {
+        errorMessage = null;
+
+        try
+        {
+            cases = await Http.GetFromJsonAsync<IReadOnlyList<CaseListItem>>("api/vmom/cases")
+                ?? Array.Empty<CaseListItem>();
+
+            if (cases.Count == 0)
+            {
+                selectedCase = null;
+                selectedCaseId = null;
+                return;
+            }
+
+            if (!selectedCaseId.HasValue || cases.All(c => c.Id != selectedCaseId.Value))
+            {
+                await SelectCaseAsync(cases[0].Id);
+            }
+            else
+            {
+                await SelectCaseAsync(selectedCaseId.Value);
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+            cases = Array.Empty<CaseListItem>();
+            selectedCase = null;
+            selectedCaseId = null;
+        }
+    }
+
+    private async Task SelectCaseAsync(int caseId)
+    {
+        selectedCaseId = caseId;
+        selectedCase = await Http.GetFromJsonAsync<VmomCaseDetail>($"api/vmom/cases/{caseId}");
+    }
+
+    private void BeginDownloadCase(int caseId)
+    {
+        downloadUrl = $"api/vmom/cases/{caseId}/download?ts={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
+    }
+}

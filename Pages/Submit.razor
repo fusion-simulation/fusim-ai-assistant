@@ -1,0 +1,293 @@
+@page "/new-case"
+@inject HttpClient Http
+@inject ClientSessionService Session
+@inject NavigationManager Navigation
+
+<PageTitle>新建算例</PageTitle>
+
+@if (!isReady)
+{
+    <div class="loading-box">加载输入模板...</div>
+}
+else
+{
+    <section class="panel-card">
+        <h2>新建算例</h2>
+
+        <div class="mode-switch mb-3">
+            <button type="button" class="btn btn-sm @(mode == CreateMode.ByInputFile ? "btn-primary" : "btn-outline-primary")" @onclick="() => mode = CreateMode.ByInputFile">通过 input.in</button>
+            <button type="button" class="btn btn-sm @(mode == CreateMode.ByForm ? "btn-primary" : "btn-outline-primary")" @onclick="() => mode = CreateMode.ByForm">通过表单</button>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div class="alert alert-danger">@errorMessage</div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(successMessage))
+        {
+            <div class="alert alert-success">@successMessage</div>
+        }
+
+        @if (mode == CreateMode.ByInputFile)
+        {
+            <EditForm Model="fileFormModel" OnValidSubmit="SubmitByInputAsync">
+                <div class="mb-3">
+                    <label for="input-title" class="form-label">算例标题</label>
+                    <InputText id="input-title" class="form-control" @bind-Value="fileFormModel.Title" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="input-content" class="form-label">input.in 内容（仅需 eqinpt）</label>
+                    <InputTextArea id="input-content" class="form-control code-input" @bind-Value="fileFormModel.InputContent" />
+                </div>
+
+                <button class="btn btn-primary" disabled="@isSubmitting" type="submit">
+                    @(isSubmitting ? "提交中..." : "提交并运行")
+                </button>
+            </EditForm>
+        }
+        else
+        {
+            <EditForm Model="formCaseModel" OnValidSubmit="SubmitByFormAsync">
+                <div class="mb-3">
+                    <label for="form-title" class="form-label">算例标题</label>
+                    <InputText id="form-title" class="form-control" @bind-Value="formCaseModel.Title" />
+                </div>
+
+                <div class="form-grid">
+                    @foreach (var key in fieldOrder)
+                    {
+                        var isArray = arrayFields.Contains(key);
+                        <div class="form-field-card">
+                            <label class="form-label"><code>@key</code></label>
+                            <div class="field-desc">@catalog[key]</div>
+
+                            @if (isArray)
+                            {
+                                <InputTextArea class="form-control code-array" @bind-Value="formFields[key]" />
+                            }
+                            else
+                            {
+                                <InputText class="form-control" @bind-Value="formFields[key]" />
+                            }
+                        </div>
+                    }
+                </div>
+
+                <button class="btn btn-primary mt-3" disabled="@isSubmitting" type="submit">
+                    @(isSubmitting ? "提交中..." : "转换为 eqinpt 并运行")
+                </button>
+            </EditForm>
+        }
+    </section>
+}
+
+@code {
+    private readonly SubmitFormModel fileFormModel = new();
+    private readonly Dictionary<string, string> catalog = new();
+    private readonly Dictionary<string, string> formFields = new();
+    private readonly List<string> fieldOrder = new();
+    private readonly HashSet<string> arrayFields = ["eqprzi", "eqiotb", "rmb", "ymb"];
+    private readonly FormCaseModel formCaseModel = new();
+
+    private bool isReady;
+    private bool isSubmitting;
+    private string? errorMessage;
+    private string? successMessage;
+    private CreateMode mode = CreateMode.ByInputFile;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Session.IsLoggedIn)
+        {
+            Navigation.NavigateTo("/login", forceLoad: false);
+            return;
+        }
+
+        try
+        {
+            var payload = await Http.GetFromJsonAsync<VmomInputCatalogResponse>("api/vmom/catalog");
+            if (payload is not null)
+            {
+                foreach (var kv in payload.Fields)
+                {
+                    catalog[kv.Key] = kv.Value;
+                    fieldOrder.Add(kv.Key);
+                }
+
+                fileFormModel.InputContent = payload.TemplateInput;
+                var defaults = ParseEqinptDefaults(payload.TemplateInput);
+                foreach (var key in fieldOrder)
+                {
+                    formFields[key] = defaults.TryGetValue(key, out var value) ? value : string.Empty;
+                }
+            }
+
+            fileFormModel.Title = $"case-{DateTime.Now:yyyyMMdd-HHmmss}";
+            formCaseModel.Title = fileFormModel.Title;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isReady = true;
+        }
+    }
+
+    private async Task SubmitByInputAsync()
+    {
+        errorMessage = null;
+        successMessage = null;
+
+        if (string.IsNullOrWhiteSpace(fileFormModel.InputContent))
+        {
+            errorMessage = "input.in 不能为空。";
+            return;
+        }
+
+        try
+        {
+            isSubmitting = true;
+            var response = await Http.PostAsJsonAsync("api/vmom/cases", new CreateCaseRequest(fileFormModel.Title, fileFormModel.InputContent));
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = await response.Content.ReadAsStringAsync();
+                return;
+            }
+
+            successMessage = "算例已提交。";
+            Navigation.NavigateTo("/cases", forceLoad: false);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private async Task SubmitByFormAsync()
+    {
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            isSubmitting = true;
+            var payload = new CreateCaseFromFormRequest(
+                formCaseModel.Title,
+                fieldOrder.ToDictionary(
+                    key => key,
+                    key => formFields.TryGetValue(key, out var value) ? value : string.Empty));
+
+            var response = await Http.PostAsJsonAsync("api/vmom/cases/from-form", payload);
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = await response.Content.ReadAsStringAsync();
+                return;
+            }
+
+            successMessage = "算例已提交。";
+            Navigation.NavigateTo("/cases", forceLoad: false);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private static Dictionary<string, string> ParseEqinptDefaults(string content)
+    {
+        var result = new Dictionary<string, string>();
+        var lines = content.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
+
+        var inEqinpt = false;
+        string? currentKey = null;
+        var currentValue = new List<string>();
+
+        foreach (var rawLine in lines)
+        {
+            var line = rawLine.Trim();
+            if (string.IsNullOrWhiteSpace(line) || line.StartsWith('!'))
+            {
+                continue;
+            }
+
+            if (!inEqinpt)
+            {
+                if (line.StartsWith("&eqinpt", StringComparison.OrdinalIgnoreCase))
+                {
+                    inEqinpt = true;
+                }
+                continue;
+            }
+
+            if (line == "/")
+            {
+                FlushCurrent();
+                break;
+            }
+
+            var eqIndex = line.IndexOf('=');
+            if (eqIndex >= 0)
+            {
+                FlushCurrent();
+
+                currentKey = line[..eqIndex].Trim();
+                var valuePart = line[(eqIndex + 1)..].Trim();
+                currentValue.Add(valuePart);
+            }
+            else if (!string.IsNullOrWhiteSpace(currentKey))
+            {
+                currentValue.Add(line);
+            }
+        }
+
+        return result;
+
+        void FlushCurrent()
+        {
+            if (string.IsNullOrWhiteSpace(currentKey) || currentValue.Count == 0)
+            {
+                currentKey = null;
+                currentValue.Clear();
+                return;
+            }
+
+            var merged = string.Join(" ", currentValue)
+                .Trim()
+                .TrimEnd(',')
+                .Trim();
+
+            result[currentKey] = merged;
+            currentKey = null;
+            currentValue.Clear();
+        }
+    }
+
+    private enum CreateMode
+    {
+        ByInputFile,
+        ByForm
+    }
+
+    private class SubmitFormModel
+    {
+        public string Title { get; set; } = string.Empty;
+        public string InputContent { get; set; } = string.Empty;
+    }
+
+    private class FormCaseModel
+    {
+        public string Title { get; set; } = string.Empty;
+    }
+}

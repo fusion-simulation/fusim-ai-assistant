@@ -1,0 +1,61 @@
+# =========================
+# .NET / ASP.NET / Blazor
+# =========================
+bin/
+obj/
+**/bin/
+**/obj/
+publish/
+artifacts/
+
+# User-specific files
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Runtime / local data
+data/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+*.mdb
+
+# ASP.NET Core local keys
+.aspnet/
+**/DataProtection-Keys/
+
+# =========================
+# Node / Frontend tooling
+# =========================
+**/node_modules/
+**/.pnpm-store/
+**/.npm/
+**/.yarn/
+**/.next/
+**/coverage/
+
+# =========================
+# IDE / Editor
+# =========================
+.vs/
+.vscode/
+.idea/
+
+# =========================
+# Logs / temp
+# =========================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
