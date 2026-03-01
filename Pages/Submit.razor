@@ -159,7 +159,7 @@ else
             }
 
             successMessage = "算例已提交。";
-            Navigation.NavigateTo("/cases", forceLoad: false);
+            await Task.Delay(1500); Navigation.NavigateTo("/cases", forceLoad: false);
         }
         catch (Exception ex)
         {
@@ -193,7 +193,7 @@ else
             }
 
             successMessage = "算例已提交。";
-            Navigation.NavigateTo("/cases", forceLoad: false);
+            await Task.Delay(1500); Navigation.NavigateTo("/cases", forceLoad: false);
         }
         catch (Exception ex)
         {
