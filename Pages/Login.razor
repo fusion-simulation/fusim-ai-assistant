@@ -5,7 +5,8 @@
 
 <PageTitle>登录</PageTitle>
 
-<div class="login-wrap">
+<div class="login-container">
+    <div class="ambient-glow"></div>
     <div class="login-card">
         <h1>vmom2 测试登录</h1>
         <p>本项目为测试环境，仅支持 `guest/guest`。</p>
@@ -13,22 +14,22 @@
         <EditForm Model="model" OnValidSubmit="HandleLogin">
             <DataAnnotationsValidator />
 
-            <div class="mb-3">
-                <label for="username" class="form-label">账号</label>
-                <InputText id="username" class="form-control" @bind-Value="model.Username" />
+            <div class="form-group">
+                <label for="username" class="input-label">账号</label>
+                <InputText id="username" class="input-field" @bind-Value="model.Username" />
             </div>
 
-            <div class="mb-3">
-                <label for="password" class="form-label">密码</label>
-                <InputText id="password" type="password" class="form-control" @bind-Value="model.Password" />
+            <div class="form-group">
+                <label for="password" class="input-label">密码</label>
+                <InputText id="password" type="password" class="input-field" @bind-Value="model.Password" />
             </div>
 
             @if (!string.IsNullOrWhiteSpace(errorMessage))
             {
-                <div class="alert alert-danger">@errorMessage</div>
+                <div class="error-message">@errorMessage</div>
             }
 
-            <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+            <button type="submit" class="submit-btn" disabled="@isSubmitting">
                 @(isSubmitting ? "登录中..." : "登录")
             </button>
         </EditForm>
