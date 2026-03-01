@@ -1,39 +1,79 @@
-.shell-layout {
-    min-height: 100vh;
-    display: grid;
-    grid-template-columns: 250px 1fr;
-    background: linear-gradient(180deg, #eef3fb 0%, #e7eef8 100%);
+.page-container {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    background-color: var(--bg-base);
+    color: var(--text-primary);
 }
 
-.shell-sidebar {
-    border-right: 1px solid #d8e1ee;
-    background: #f8fbff;
-    padding: 1.1rem 0.9rem;
+.sidebar-wrapper {
+    width: 260px;
+    flex-shrink: 0;
+    background-color: var(--bg-surface);
+    border-right: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
 }
 
-.shell-brand {
-    font-size: 1rem;
-    font-weight: 700;
-    color: #114375;
-    margin-bottom: 1.2rem;
-    padding: 0.2rem 0.4rem;
+.main-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0; /* Prevent flex blowout */
 }
 
-.shell-main {
-    padding: 1rem 1.2rem;
+.top-row {
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+    background: rgba(24, 24, 27, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border-subtle);
+    position: sticky;
+    top: 0;
+    z-index: 10;
 }
 
-@media (max-width: 900px) {
-    .shell-layout {
-        grid-template-columns: 1fr;
+.top-row .brand-text {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.top-row a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.top-row a:hover {
+    color: var(--accent-primary);
+}
+
+.content-body {
+    flex-grow: 1;
+    padding: 2rem;
+    overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+    .page-container {
+        flex-direction: column;
+        height: auto;
+        overflow: visible;
     }
 
-    .shell-sidebar {
-        border-right: 0;
-        border-bottom: 1px solid #d8e1ee;
+    .sidebar-wrapper {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--border-subtle);
     }
 
-    .shell-main {
-        padding: 0.9rem;
+    .content-body {
+        padding: 1rem;
     }
 }

@@ -1,19 +1,45 @@
-﻿@inject ClientSessionService Session
+@inject ClientSessionService Session
 @inject NavigationManager Navigation
 @implements IDisposable
 
-<nav class="shell-nav">
+<nav class="nav-container">
     @if (Session.IsLoggedIn)
     {
-        <NavLink class="shell-link" href="/" Match="NavLinkMatch.All">主页</NavLink>
-        <NavLink class="shell-link" href="/new-case">新建算例</NavLink>
-        <NavLink class="shell-link" href="/cases">算例列表</NavLink>
-        <div class="shell-user">用户: @Session.Username (@Session.UserId)</div>
-        <button type="button" class="shell-logout" @onclick="Logout">退出登录</button>
+        <ul class="nav-list">
+            <li>
+                <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                    Home
+                </NavLink>
+            </li>
+            <li>
+                <NavLink class="nav-link" href="submit">
+                    Submit
+                </NavLink>
+            </li>
+            <li>
+                <NavLink class="nav-link" href="cases">
+                    Cases
+                </NavLink>
+            </li>
+        </ul>
+
+        <div class="user-section">
+            <div class="user-info">
+                <span class="user-name">@Session.Username</span>
+                <span class="user-id">#@Session.UserId</span>
+            </div>
+            <button type="button" class="btn-logout" @onclick="Logout">Logout</button>
+        </div>
     }
     else
     {
-        <NavLink class="shell-link" href="/login" Match="NavLinkMatch.All">登录</NavLink>
+        <ul class="nav-list">
+            <li>
+                <NavLink class="nav-link" href="login" Match="NavLinkMatch.All">
+                    Login
+                </NavLink>
+            </li>
+        </ul>
     }
 </nav>
 
@@ -28,7 +54,7 @@
     private void Logout()
     {
         Session.SignOut();
-        Navigation.NavigateTo("/login", forceLoad: false);
+        Navigation.NavigateTo("login", forceLoad: false);
     }
 
     public void Dispose()
