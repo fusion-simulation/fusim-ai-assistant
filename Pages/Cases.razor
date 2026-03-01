@@ -11,96 +11,51 @@
 }
 else
 {
-    <div class="cases-grid">
-        <section class="cases-container">
-            <div class="panel-head">
-                <h2 class="page-title">算例列表</h2>
-                <button type="button" class="action-btn" @onclick="LoadCasesAsync">刷新</button>
-            </div>
+    <div class="cases-container">
+        <div class="panel-head">
+            <h2 class="page-title">算例列表</h2>
+            <button type="button" class="action-btn" @onclick="LoadCasesAsync">刷新</button>
+        </div>
 
-            @if (!string.IsNullOrWhiteSpace(errorMessage))
-            {
-                <div class="alert alert-danger">@errorMessage</div>
-            }
-            else if (cases.Count == 0)
-            {
-                <div class="empty-hint">暂无算例。</div>
-            }
-            else
-            {
-                <table class="cases-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>标题</th>
-                            <th>状态</th>
-                            <th>操作</th>
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div class="alert alert-danger">@errorMessage</div>
+        }
+        else if (cases.Count == 0)
+        {
+            <div class="empty-hint">暂无算例。</div>
+        }
+        else
+        {
+            <table class="cases-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>标题</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in cases)
+                    {
+                        <tr class="case-row">
+                            <td>@item.Id</td>
+                            <td>@item.Title</td>
+                            <td><span class="status-tag status-@item.Status">@item.Status</span></td>
+                            <td class="action-cell">
+                                <button type="button"
+                                        class="action-btn"
+                                        @onclick="() => ViewCaseDetails(item.Id)">查看结果</button>
+                                <button type="button"
+                                        class="action-btn-secondary"
+                                        @onclick="() => BeginDownloadCase(item.Id)">下载 zip</button>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in cases)
-                        {
-                            <tr class="case-row @(item.Id == selectedCaseId ? "row-selected" : string.Empty)" @onclick="() => SelectCaseAsync(item.Id)">
-                                <td>@item.Id</td>
-                                <td>@item.Title</td>
-                                <td><span class="status-tag status-@item.Status">@item.Status</span></td>
-                                <td>
-                                    <button type="button"
-                                            class="action-btn-secondary"
-                                            @onclick="() => BeginDownloadCase(item.Id)"
-                                            @onclick:stopPropagation="true">下载 zip</button>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            }
-        </section>
-
-        <section class="cases-container">
-            <div class="panel-head">
-                <h2 class="page-title">算例信息</h2>
-                @if (selectedCaseId.HasValue)
-                {
-                    <button type="button"
-                            class="action-btn-secondary"
-                            @onclick="() => BeginDownloadCase(selectedCaseId.Value)">下载当前算例 zip</button>
-                }
-            </div>
-
-            @if (selectedCase is null)
-            {
-                <div class="empty-hint">请选择算例后查看结果文件。</div>
-            }
-            else
-            {
-                @if (!string.IsNullOrWhiteSpace(selectedCase.ErrorMessage))
-                {
-                    <div class="alert alert-warning">@selectedCase.ErrorMessage</div>
-                }
-
-                <div class="mb-2">
-                    <span class="mono">caseId=@selectedCase.Id</span>
-                    <span class="mx-2">|</span>
-                    <span class="mono">状态=@selectedCase.Status</span>
-                </div>
-
-                <details open>
-                    <summary>RZ.txt</summary>
-                    <pre class="file-preview">@selectedCase.RzText</pre>
-                </details>
-
-                <details>
-                    <summary>eqpr_iota.txt</summary>
-                    <pre class="file-preview">@selectedCase.EqprIotaText</pre>
-                </details>
-
-                <details>
-                    <summary>vmom.out</summary>
-                    <pre class="file-preview">@selectedCase.VmomOutText</pre>
-                </details>
-            }
-        </section>
+                    }
+                </tbody>
+            </table>
+        }
     </div>
 
     @if (!string.IsNullOrWhiteSpace(downloadUrl))
@@ -113,8 +68,6 @@ else
     private bool isReady;
     private string? errorMessage;
     private IReadOnlyList<CaseListItem> cases = Array.Empty<CaseListItem>();
-    private VmomCaseDetail? selectedCase;
-    private int? selectedCaseId;
     private string? downloadUrl;
 
     protected override async Task OnInitializedAsync()
@@ -137,36 +90,17 @@ else
         {
             cases = await Http.GetFromJsonAsync<IReadOnlyList<CaseListItem>>("api/vmom/cases")
                 ?? Array.Empty<CaseListItem>();
-
-            if (cases.Count == 0)
-            {
-                selectedCase = null;
-                selectedCaseId = null;
-                return;
-            }
-
-            if (!selectedCaseId.HasValue || cases.All(c => c.Id != selectedCaseId.Value))
-            {
-                await SelectCaseAsync(cases[0].Id);
-            }
-            else
-            {
-                await SelectCaseAsync(selectedCaseId.Value);
-            }
         }
         catch (Exception ex)
         {
             errorMessage = ex.Message;
             cases = Array.Empty<CaseListItem>();
-            selectedCase = null;
-            selectedCaseId = null;
         }
     }
 
-    private async Task SelectCaseAsync(int caseId)
+    private void ViewCaseDetails(int caseId)
     {
-        selectedCaseId = caseId;
-        selectedCase = await Http.GetFromJsonAsync<VmomCaseDetail>($"api/vmom/cases/{caseId}");
+        Navigation.NavigateTo($"/cases/{caseId}");
     }
 
     private void BeginDownloadCase(int caseId)
