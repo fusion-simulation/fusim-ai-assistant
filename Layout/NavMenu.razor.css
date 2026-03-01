@@ -19,7 +19,7 @@
     margin: 0;
 }
 
-.nav-link {
+::deep .nav-link {
     display: flex;
     align-items: center;
     text-decoration: none;
@@ -31,12 +31,12 @@
     transition: all 0.2s ease;
 }
 
-.nav-link:hover {
+::deep .nav-link:hover {
     background-color: var(--bg-surface-hover);
     color: var(--text-primary);
 }
 
-.nav-link.active {
+::deep .nav-link.active {
     background-color: var(--bg-surface);
     color: var(--accent-primary);
     border-left: 3px solid var(--accent-primary);

@@ -30,3 +30,4 @@ h1, h2, h3, h4, h5, h6 { color: var(--text-primary); margin-top: 0; font-weight:
 p { color: var(--text-secondary); line-height: 1.6; }
 a { color: var(--accent-primary); text-decoration: none; transition: color 0.2s; }
 a:hover { color: var(--accent-primary-hover); }
+input, textarea, select, button { font-family: inherit; }

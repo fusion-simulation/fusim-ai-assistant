@@ -42,7 +42,7 @@
     color: var(--text-primary);
 }
 
-.input-field {
+::deep .input-field {
     width: 100%;
     background: var(--bg-base);
     border: 1px solid var(--border-subtle);
@@ -52,13 +52,13 @@
     transition: all 0.2s;
 }
 
-.input-field:focus {
+::deep .input-field:focus {
     outline: none;
     border-color: var(--accent-primary);
     box-shadow: 0 0 0 3px var(--border-focus);
 }
 
-.code-input, .code-array {
+::deep .code-input, ::deep .code-array {
     font-family: monospace;
     min-height: 150px;
 }
@@ -125,7 +125,7 @@
 }
 
 /* Make full width for arrays */
-.form-field-card:has(.code-array) {
+.form-field-card:has(::deep .code-array) {
     grid-column: 1 / -1;
 }
 
