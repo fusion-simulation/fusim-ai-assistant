@@ -4,8 +4,8 @@
     border-radius: 12px;
     border: 1px solid var(--border-subtle);
     box-shadow: var(--shadow-elevated);
-    max-width: 800px;
-    margin-top: 1rem;
+    width: 100%;
+    
 }
 
 .mode-switch {
@@ -72,7 +72,7 @@
     border-radius: 8px;
     cursor: pointer;
     transition: transform 0.1s, filter 0.2s;
-    margin-top: 1rem;
+    
 }
 
 .submit-btn:hover {
