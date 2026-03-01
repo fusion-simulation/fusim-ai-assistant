@@ -76,20 +76,6 @@
     margin-right: 0.5rem;
 }
 
-.status-tag {
-    padding: 0.25rem 0.75rem;
-    border-radius: 6px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    display: inline-block;
-}
-
-/* Updated Status Colors */
-.status-tag.status-Running { background: rgba(255, 255, 255, 0.1); color: #ffffff; border: 1px solid rgba(255,255,255,0.2); }
-.status-tag.status-Success { background: rgba(245, 166, 35, 0.1); color: var(--accent-primary); border: 1px solid rgba(245,166,35,0.2); }
-.status-tag.status-Failed { background: rgba(161, 161, 170, 0.1); color: var(--text-secondary); border: 1px solid rgba(161,161,170,0.2); }
-.status-tag.status-Pending { background: rgba(255, 255, 255, 0.1); color: #ffffff; border: 1px solid rgba(255,255,255,0.2); }
 
 .alert-danger {
     background-color: rgba(239, 68, 68, 0.1);
