@@ -1,200 +1,50 @@
 :root {
-    --text-main: #1f2937;
-    --line-soft: #d6e0ef;
-    --panel-bg: #ffffff;
-    --brand: #14477f;
+  --bg-base: #18181b; /* zinc-900 */
+  --bg-surface: #27272a; /* zinc-800 */
+  --bg-surface-hover: #3f3f46; /* zinc-700 */
+  --accent-primary: #f5a623; /* striking orange-yellow */
+  --accent-primary-hover: #eab308;
+  --text-primary: #f4f4f5; /* zinc-100 */
+  --text-secondary: #a1a1aa; /* zinc-400 */
+  --text-inverse: #18181b; /* text on bright accent backgrounds */
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-focus: rgba(245, 166, 35, 0.5);
+  --shadow-elevated: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.5);
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 
-html,
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 body {
-    margin: 0;
-    padding: 0;
-    font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-    color: var(--text-main);
-    background: #e8eff7;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-a,
-.btn-link {
-    color: var(--brand);
-}
-
-h1,
-h2,
-h3 {
-    margin-top: 0;
-}
-
-.loading-box,
-.empty-hint {
-    color: #6b7280;
-}
-
-.panel-card {
-    background: var(--panel-bg);
-    border: 1px solid var(--line-soft);
-    border-radius: 0.75rem;
-    padding: 1rem;
-    box-shadow: 0 6px 16px rgba(15, 53, 92, 0.06);
-}
-
-.panel-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.8rem;
-    margin-bottom: 0.8rem;
-}
-
-.overview-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(120px, 1fr));
-    gap: 0.75rem;
-}
-
-.overview-card {
-    border: 1px solid #d7e2f2;
-    border-radius: 0.65rem;
-    background: #f8fbff;
-    padding: 0.7rem 0.8rem;
-}
-
-.overview-label {
-    color: #667487;
-    font-size: 0.82rem;
-}
-
-.overview-value {
-    font-size: 1.45rem;
-    font-weight: 700;
-    color: #163f6d;
-}
-
-.cases-grid {
-    display: grid;
-    grid-template-columns: 1.1fr 1.6fr;
-    gap: 1rem;
-}
-
-.case-row {
-    cursor: pointer;
-}
-
-.row-selected {
-    background: #e9f2ff;
-}
-
-.status-tag {
-    display: inline-block;
-    padding: 0.14rem 0.42rem;
-    border-radius: 0.42rem;
-    font-size: 0.78rem;
-    font-weight: 600;
-}
-
-.status-running,
-.status-queued {
-    background: #fef3c7;
-    color: #7c5b12;
-}
-
-.status-success {
-    background: #dcfce7;
-    color: #166534;
-}
-
-.status-failed {
-    background: #fee2e2;
-    color: #9f1d1d;
-}
-
-.mono,
-code {
-    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-}
-
-.file-preview {
-    max-height: 260px;
-    overflow: auto;
-    margin-top: 0.4rem;
-    padding: 0.7rem;
-    border-radius: 0.45rem;
-    border: 1px solid #dde5f1;
-    background: #f8fbff;
-    font-size: 0.78rem;
-    line-height: 1.4;
-}
-
-.login-wrap {
-    min-height: calc(100vh - 7rem);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.login-card {
-    width: min(460px, 94vw);
-    border: 1px solid #d9e3ef;
-    border-radius: 0.8rem;
-    background: #ffffff;
-    box-shadow: 0 12px 28px rgba(19, 49, 85, 0.08);
-    padding: 1.2rem;
-}
-
-.mode-switch {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.form-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(240px, 1fr));
-    gap: 0.75rem;
-}
-
-.form-field-card {
-    border: 1px solid #dce5f2;
-    border-radius: 0.6rem;
-    background: #fafcff;
-    padding: 0.68rem;
-}
-
-.field-desc {
-    color: #64748b;
-    font-size: 0.78rem;
-    margin-bottom: 0.4rem;
-    min-height: 2.15rem;
-}
-
-.code-input {
-    min-height: 300px;
-    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-    font-size: 0.82rem;
-}
-
-.code-array {
-    min-height: 100px;
-    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-    font-size: 0.8rem;
-}
-
-.download-frame {
-    width: 0;
-    height: 0;
-    border: 0;
-    position: absolute;
-}
+/* Global typography resets */
+h1, h2, h3, h4, h5, h6 { color: var(--text-primary); margin-top: 0; font-weight: 600; }
+p { color: var(--text-secondary); line-height: 1.6; }
+a { color: var(--accent-primary); text-decoration: none; transition: color 0.2s; }
+a:hover { color: var(--accent-primary-hover); }
+input, textarea, select, button { font-family: inherit; }
 
 #blazor-error-ui {
-    background: lightyellow;
+    background: var(--bg-surface);
+    color: var(--text-primary);
     bottom: 0;
     box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
-    display: none;
+    display: none; /* Hidden by default */
     left: 0;
-    padding: 0.6rem 1.25rem 0.7rem;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
     position: fixed;
     width: 100%;
     z-index: 1000;
+    border-top: 1px solid var(--accent-primary);
 }
 
 #blazor-error-ui .dismiss {
@@ -204,10 +54,35 @@ code {
     top: 0.5rem;
 }
 
-@media (max-width: 1080px) {
-    .cases-grid,
-    .form-grid,
-    .overview-grid {
-        grid-template-columns: 1fr;
-    }
+/* Global Status Tags */
+.status-tag {
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    display: inline-block;
+}
+
+/* Lowercase matching based on backend data */
+.status-tag.status-running, .status-tag.status-Running { 
+    background: rgba(255, 255, 255, 0.1); 
+    color: #ffffff; 
+    border: 1px solid rgba(255,255,255,0.2); 
+}
+.status-tag.status-success, .status-tag.status-Success { 
+    background: rgba(245, 166, 35, 0.1); 
+    color: var(--accent-primary); 
+    border: 1px solid rgba(245,166,35,0.2); 
+}
+.status-tag.status-failed, .status-tag.status-Failed { 
+    background: rgba(161, 161, 170, 0.1); 
+    color: var(--text-secondary); 
+    border: 1px solid rgba(161,161,170,0.2); 
+}
+.status-tag.status-pending, .status-tag.status-Pending,
+.status-tag.status-queued, .status-tag.status-Queued { 
+    background: rgba(255, 255, 255, 0.1); 
+    color: #ffffff; 
+    border: 1px solid rgba(255,255,255,0.2); 
 }

@@ -2,6 +2,8 @@
 @inject HttpClient Http
 @inject ClientSessionService Session
 @inject NavigationManager Navigation
+@using Microsoft.AspNetCore.SignalR.Client
+@implements IAsyncDisposable
 
 <PageTitle>算例列表</PageTitle>
 
@@ -11,96 +13,52 @@
 }
 else
 {
-    <div class="cases-grid">
-        <section class="panel-card">
-            <div class="panel-head">
-                <h2 class="mb-0">算例列表</h2>
-                <button type="button" class="btn btn-sm btn-outline-primary" @onclick="LoadCasesAsync">刷新</button>
-            </div>
+    <div class="cases-container">
+        <div class="panel-head">
+            <h2 class="page-title">算例列表</h2>
+        </div>
 
-            @if (!string.IsNullOrWhiteSpace(errorMessage))
-            {
-                <div class="alert alert-danger">@errorMessage</div>
-            }
-            else if (cases.Count == 0)
-            {
-                <div class="empty-hint">暂无算例。</div>
-            }
-            else
-            {
-                <table class="table table-sm table-hover">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>标题</th>
-                            <th>状态</th>
-                            <th>操作</th>
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <div class="alert alert-danger">@errorMessage</div>
+        }
+        else if (cases.Count == 0)
+        {
+            <div class="empty-hint">暂无算例。</div>
+        }
+        else
+        {
+            <table class="cases-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>标题</th>
+                        <th>状态</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in cases)
+                    {
+                        <tr class="case-row">
+                            <td>@item.Id</td>
+                            <td>@item.Title</td>
+                            <td><span class="status-tag status-@item.Status">@item.Status</span></td>
+                            <td class="action-cell">
+                                <button type="button"
+                                        class="action-btn"
+                                        disabled="@(item.Status.Equals("success", StringComparison.OrdinalIgnoreCase) ? false : true)"
+                                        @onclick="() => ViewCaseDetails(item.Id)">查看结果</button>
+                                <button type="button"
+                                        class="action-btn-secondary"
+                                        disabled="@(item.Status.Equals("success", StringComparison.OrdinalIgnoreCase) ? false : true)"
+                                        @onclick="() => BeginDownloadCase(item.Id)">下载 zip</button>
+                            </td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in cases)
-                        {
-                            <tr class="case-row @(item.Id == selectedCaseId ? "row-selected" : string.Empty)" @onclick="() => SelectCaseAsync(item.Id)">
-                                <td>@item.Id</td>
-                                <td>@item.Title</td>
-                                <td><span class="status-tag status-@item.Status">@item.Status</span></td>
-                                <td>
-                                    <button type="button"
-                                            class="btn btn-sm btn-outline-secondary"
-                                            @onclick="() => BeginDownloadCase(item.Id)"
-                                            @onclick:stopPropagation="true">下载 zip</button>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            }
-        </section>
-
-        <section class="panel-card">
-            <div class="panel-head">
-                <h2 class="mb-0">算例信息</h2>
-                @if (selectedCaseId.HasValue)
-                {
-                    <button type="button"
-                            class="btn btn-sm btn-outline-secondary"
-                            @onclick="() => BeginDownloadCase(selectedCaseId.Value)">下载当前算例 zip</button>
-                }
-            </div>
-
-            @if (selectedCase is null)
-            {
-                <div class="empty-hint">请选择算例后查看结果文件。</div>
-            }
-            else
-            {
-                @if (!string.IsNullOrWhiteSpace(selectedCase.ErrorMessage))
-                {
-                    <div class="alert alert-warning">@selectedCase.ErrorMessage</div>
-                }
-
-                <div class="mb-2">
-                    <span class="mono">caseId=@selectedCase.Id</span>
-                    <span class="mx-2">|</span>
-                    <span class="mono">状态=@selectedCase.Status</span>
-                </div>
-
-                <details open>
-                    <summary>RZ.txt</summary>
-                    <pre class="file-preview">@selectedCase.RzText</pre>
-                </details>
-
-                <details>
-                    <summary>eqpr_iota.txt</summary>
-                    <pre class="file-preview">@selectedCase.EqprIotaText</pre>
-                </details>
-
-                <details>
-                    <summary>vmom.out</summary>
-                    <pre class="file-preview">@selectedCase.VmomOutText</pre>
-                </details>
-            }
-        </section>
+                    }
+                </tbody>
+            </table>
+        }
     </div>
 
     @if (!string.IsNullOrWhiteSpace(downloadUrl))
@@ -113,9 +71,8 @@ else
     private bool isReady;
     private string? errorMessage;
     private IReadOnlyList<CaseListItem> cases = Array.Empty<CaseListItem>();
-    private VmomCaseDetail? selectedCase;
-    private int? selectedCaseId;
     private string? downloadUrl;
+    private HubConnection? hubConnection;
 
     protected override async Task OnInitializedAsync()
     {
@@ -129,6 +86,24 @@ else
         isReady = true;
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || !Session.IsLoggedIn)
+        {
+            return;
+        }
+
+        try
+        {
+            await ConnectHubAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
     private async Task LoadCasesAsync()
     {
         errorMessage = null;
@@ -137,40 +112,77 @@ else
         {
             cases = await Http.GetFromJsonAsync<IReadOnlyList<CaseListItem>>("api/vmom/cases")
                 ?? Array.Empty<CaseListItem>();
-
-            if (cases.Count == 0)
-            {
-                selectedCase = null;
-                selectedCaseId = null;
-                return;
-            }
-
-            if (!selectedCaseId.HasValue || cases.All(c => c.Id != selectedCaseId.Value))
-            {
-                await SelectCaseAsync(cases[0].Id);
-            }
-            else
-            {
-                await SelectCaseAsync(selectedCaseId.Value);
-            }
         }
         catch (Exception ex)
         {
             errorMessage = ex.Message;
             cases = Array.Empty<CaseListItem>();
-            selectedCase = null;
-            selectedCaseId = null;
         }
     }
 
-    private async Task SelectCaseAsync(int caseId)
+    private async Task ConnectHubAsync()
     {
-        selectedCaseId = caseId;
-        selectedCase = await Http.GetFromJsonAsync<VmomCaseDetail>($"api/vmom/cases/{caseId}");
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/hubs/case-status"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        hubConnection.On<IReadOnlyList<CaseListItem>>("CasesUpdated", async data =>
+        {
+            cases = data;
+            errorMessage = null;
+            isReady = true;
+            await InvokeAsync(StateHasChanged);
+        });
+
+        hubConnection.Reconnected += async _ =>
+        {
+            try
+            {
+                await SubscribeCasesAsync();
+                errorMessage = null;
+            }
+            catch (Exception ex)
+            {
+                errorMessage = ex.Message;
+            }
+
+            await InvokeAsync(StateHasChanged);
+        };
+
+        await hubConnection.StartAsync();
+        await SubscribeCasesAsync();
+    }
+
+    private Task SubscribeCasesAsync()
+    {
+        return hubConnection is null
+            ? Task.CompletedTask
+            : hubConnection.InvokeAsync("SubscribeCases");
+    }
+
+    private void ViewCaseDetails(int caseId)
+    {
+        Navigation.NavigateTo($"/cases/{caseId}");
     }
 
     private void BeginDownloadCase(int caseId)
     {
         downloadUrl = $"api/vmom/cases/{caseId}/download?ts={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            try
+            {
+                await hubConnection.DisposeAsync();
+            }
+            catch (Exception)
+            {
+                // Ignore errors while disconnecting.
+            }
+        }
     }
 }

@@ -1,0 +1,108 @@
+@page "/cases/{Id:int}"
+@inject HttpClient Http
+@inject ClientSessionService Session
+@inject NavigationManager Navigation
+
+<PageTitle>算例详情</PageTitle>
+
+<div class="detail-container">
+    <div class="panel-head">
+        <h2 class="page-title">
+            <button class="back-btn" @onclick="GoBack">←</button>
+            算例结果 (ID: @Id)
+        </h2>
+        <button type="button" 
+                class="action-btn-secondary" 
+                disabled="@(selectedCase?.Status.Equals("success", StringComparison.OrdinalIgnoreCase) != true)"
+                @onclick="BeginDownloadCase">下载当前算例 zip</button>
+    </div>
+
+    @if (!isReady)
+    {
+        <div class="loading-box">加载详情中...</div>
+    }
+    else if (errorMessage != null)
+    {
+        <div class="alert-danger">@errorMessage</div>
+    }
+    else if (selectedCase != null)
+    {
+        @if (!string.IsNullOrWhiteSpace(selectedCase.ErrorMessage))
+        {
+            <div class="alert-warning">@selectedCase.ErrorMessage</div>
+        }
+
+        <div class="info-bar">
+            <span class="mono">状态: </span>
+            <span class="status-tag status-@selectedCase.Status">@selectedCase.Status</span>
+        </div>
+
+        <div class="file-views">
+            <details open>
+                <summary>RZ.txt</summary>
+                <pre class="file-preview">@selectedCase.RzText</pre>
+            </details>
+
+            <details>
+                <summary>eqpr_iota.txt</summary>
+                <pre class="file-preview">@selectedCase.EqprIotaText</pre>
+            </details>
+
+            <details>
+                <summary>vmom.out</summary>
+                <pre class="file-preview">@selectedCase.VmomOutText</pre>
+            </details>
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(downloadUrl))
+    {
+        <iframe class="download-frame" src="@downloadUrl" title="case-download"></iframe>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private bool isReady;
+    private string? errorMessage;
+    private VmomCaseDetail? selectedCase;
+    private string? downloadUrl;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Session.IsLoggedIn)
+        {
+            Navigation.NavigateTo("/login", forceLoad: false);
+            return;
+        }
+
+        await LoadCaseAsync();
+        isReady = true;
+    }
+
+    private async Task LoadCaseAsync()
+    {
+        errorMessage = null;
+        try
+        {
+            selectedCase = await Http.GetFromJsonAsync<VmomCaseDetail>($"api/vmom/cases/{Id}");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+            selectedCase = null;
+        }
+    }
+
+    private void BeginDownloadCase()
+    {
+        downloadUrl = $"api/vmom/cases/{Id}/download?ts={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/cases");
+    }
+}

@@ -1,47 +1,95 @@
-.shell-nav {
+.nav-container {
     display: flex;
     flex-direction: column;
-    gap: 0.45rem;
+    height: 100%;
+    padding: 1.5rem 0;
 }
 
-.shell-link {
-    display: block;
+.brand-logo {
+    text-align: center;
+    color: var(--accent-primary);
+    font-size: 1.75rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 2rem;
+}
+
+.nav-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex-grow: 1;
+}
+
+.nav-list li {
+    margin: 0;
+}
+
+::deep .nav-link {
+    display: flex;
+    align-items: center;
     text-decoration: none;
-    color: #204267;
-    border: 1px solid transparent;
-    border-radius: 0.55rem;
-    padding: 0.45rem 0.62rem;
-    font-size: 0.92rem;
+    color: var(--text-secondary);
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    border-left: 3px solid transparent;
+    transition: all 0.2s ease;
 }
 
-.shell-link:hover {
-    background: #edf4ff;
-    border-color: #c5d9f4;
+::deep .nav-link:hover {
+    background-color: var(--bg-surface-hover);
+    color: var(--text-primary);
 }
 
-.shell-link.active {
-    background: #14477f;
-    color: #f6fbff;
+::deep .nav-link.active {
+    background-color: var(--bg-surface);
+    color: var(--accent-primary);
+    border-left: 3px solid var(--accent-primary);
 }
 
-.shell-user {
-    margin-top: 0.85rem;
-    font-size: 0.83rem;
-    color: #5b6573;
-    padding: 0 0.2rem;
+.user-section {
+    margin-top: auto;
+    padding: 1rem 1.5rem 0;
+    border-top: 1px solid var(--border-subtle);
 }
 
-.shell-logout {
-    margin-top: 0.25rem;
+.user-info {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 0.75rem;
+}
+
+.user-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+}
+
+.user-id {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.btn-logout {
     width: 100%;
-    border: 1px solid #d0dbeb;
-    border-radius: 0.5rem;
-    padding: 0.4rem 0.5rem;
-    background: #fff;
-    color: #2b3a49;
-    text-align: left;
+    background-color: transparent;
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    padding: 0.5rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
 }
 
-.shell-logout:hover {
-    background: #edf3fb;
+.btn-logout:hover {
+    background-color: var(--bg-surface-hover);
+    color: var(--text-primary);
+    border-color: var(--text-secondary);
 }
