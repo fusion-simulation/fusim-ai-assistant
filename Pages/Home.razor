@@ -3,7 +3,12 @@
 @inject ClientSessionService Session
 @inject NavigationManager Navigation
 
-<PageTitle>主页</PageTitle>
+<PageTitle>Home</PageTitle>
+
+<div class="hero-section">
+    <h1 class="hero-title">Welcome to <span class="text-accent">Fusim AI</span></h1>
+    <p class="hero-subtitle">Your intelligent corporate assistant.</p>
+</div>
 
 @if (!isReady)
 {
@@ -11,8 +16,8 @@
 }
 else
 {
-    <section class="panel-card mb-3">
-        <h2 class="mb-3">算例概况</h2>
+    <section class="home-card">
+        <h2 class="section-title">算例概况</h2>
         <div class="overview-grid">
             <div class="overview-card">
                 <div class="overview-label">总算例</div>
@@ -33,10 +38,10 @@ else
         </div>
     </section>
 
-    <section class="panel-card">
+    <section class="home-card">
         <div class="panel-head">
-            <h2 class="mb-0">最近算例</h2>
-            <button type="button" class="btn btn-sm btn-outline-primary" @onclick="LoadAsync">刷新</button>
+            <h2 class="section-title">最近算例</h2>
+            <button type="button" class="btn btn-sm action-btn" @onclick="LoadAsync">刷新</button>
         </div>
 
         @if (!string.IsNullOrWhiteSpace(errorMessage))
@@ -49,7 +54,7 @@ else
         }
         else
         {
-            <table class="table table-sm table-hover">
+            <table class="cases-table">
                 <thead>
                     <tr>
                         <th>ID</th>

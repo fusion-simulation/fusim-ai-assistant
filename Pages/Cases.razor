@@ -12,10 +12,10 @@
 else
 {
     <div class="cases-grid">
-        <section class="panel-card">
+        <section class="cases-container">
             <div class="panel-head">
-                <h2 class="mb-0">算例列表</h2>
-                <button type="button" class="btn btn-sm btn-outline-primary" @onclick="LoadCasesAsync">刷新</button>
+                <h2 class="page-title">算例列表</h2>
+                <button type="button" class="action-btn" @onclick="LoadCasesAsync">刷新</button>
             </div>
 
             @if (!string.IsNullOrWhiteSpace(errorMessage))
@@ -28,7 +28,7 @@ else
             }
             else
             {
-                <table class="table table-sm table-hover">
+                <table class="cases-table">
                     <thead>
                         <tr>
                             <th>ID</th>
@@ -46,7 +46,7 @@ else
                                 <td><span class="status-tag status-@item.Status">@item.Status</span></td>
                                 <td>
                                     <button type="button"
-                                            class="btn btn-sm btn-outline-secondary"
+                                            class="action-btn-secondary"
                                             @onclick="() => BeginDownloadCase(item.Id)"
                                             @onclick:stopPropagation="true">下载 zip</button>
                                 </td>
@@ -57,13 +57,13 @@ else
             }
         </section>
 
-        <section class="panel-card">
+        <section class="cases-container">
             <div class="panel-head">
-                <h2 class="mb-0">算例信息</h2>
+                <h2 class="page-title">算例信息</h2>
                 @if (selectedCaseId.HasValue)
                 {
                     <button type="button"
-                            class="btn btn-sm btn-outline-secondary"
+                            class="action-btn-secondary"
                             @onclick="() => BeginDownloadCase(selectedCaseId.Value)">下载当前算例 zip</button>
                 }
             </div>
