@@ -9,6 +9,7 @@
   <ItemGroup>
     <PackageReference Include="FreeSql" Version="3.2.833" />
     <PackageReference Include="FreeSql.Provider.Sqlite" Version="3.2.833" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.7" />
   </ItemGroup>
 
   <ItemGroup>

@@ -2,6 +2,8 @@
 @inject HttpClient Http
 @inject ClientSessionService Session
 @inject NavigationManager Navigation
+@using Microsoft.AspNetCore.SignalR.Client
+@implements IAsyncDisposable
 
 <PageTitle>Home</PageTitle>
 
@@ -41,7 +43,6 @@ else
     <section class="home-card">
         <div class="panel-head">
             <h2 class="section-title">最近算例</h2>
-            <button type="button" class="btn btn-sm action-btn" @onclick="LoadAsync">刷新</button>
         </div>
 
         @if (!string.IsNullOrWhiteSpace(errorMessage))
@@ -83,6 +84,7 @@ else
     private bool isReady;
     private string? errorMessage;
     private CaseOverviewResponse overview = new(0, 0, 0, 0, Array.Empty<CaseListItem>());
+    private HubConnection? hubConnection;
 
     protected override async Task OnInitializedAsync()
     {
@@ -96,6 +98,24 @@ else
         isReady = true;
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || !Session.IsLoggedIn)
+        {
+            return;
+        }
+
+        try
+        {
+            await ConnectHubAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
     private async Task LoadAsync()
     {
         errorMessage = null;
@@ -107,6 +127,40 @@ else
         catch (Exception ex)
         {
             errorMessage = ex.Message;
+        }
+    }
+
+    private async Task ConnectHubAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/hubs/case-status"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        hubConnection.On<CaseOverviewResponse>("OverviewUpdated", async data =>
+        {
+            overview = data;
+            errorMessage = null;
+            isReady = true;
+            await InvokeAsync(StateHasChanged);
+        });
+
+        await hubConnection.StartAsync();
+        await hubConnection.InvokeAsync("SubscribeOverview");
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            try
+            {
+                await hubConnection.DisposeAsync();
+            }
+            catch (Exception)
+            {
+                // Ignore errors while disconnecting.
+            }
         }
     }
 }

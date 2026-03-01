@@ -2,6 +2,8 @@
 @inject HttpClient Http
 @inject ClientSessionService Session
 @inject NavigationManager Navigation
+@using Microsoft.AspNetCore.SignalR.Client
+@implements IAsyncDisposable
 
 <PageTitle>算例列表</PageTitle>
 
@@ -14,7 +16,6 @@ else
     <div class="cases-container">
         <div class="panel-head">
             <h2 class="page-title">算例列表</h2>
-            <button type="button" class="action-btn" @onclick="LoadCasesAsync">刷新</button>
         </div>
 
         @if (!string.IsNullOrWhiteSpace(errorMessage))
@@ -71,6 +72,7 @@ else
     private string? errorMessage;
     private IReadOnlyList<CaseListItem> cases = Array.Empty<CaseListItem>();
     private string? downloadUrl;
+    private HubConnection? hubConnection;
 
     protected override async Task OnInitializedAsync()
     {
@@ -82,6 +84,24 @@ else
 
         await LoadCasesAsync();
         isReady = true;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || !Session.IsLoggedIn)
+        {
+            return;
+        }
+
+        try
+        {
+            await ConnectHubAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     private async Task LoadCasesAsync()
@@ -100,6 +120,25 @@ else
         }
     }
 
+    private async Task ConnectHubAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/hubs/case-status"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        hubConnection.On<IReadOnlyList<CaseListItem>>("CasesUpdated", async data =>
+        {
+            cases = data;
+            errorMessage = null;
+            isReady = true;
+            await InvokeAsync(StateHasChanged);
+        });
+
+        await hubConnection.StartAsync();
+        await hubConnection.InvokeAsync("SubscribeCases");
+    }
+
     private void ViewCaseDetails(int caseId)
     {
         Navigation.NavigateTo($"/cases/{caseId}");
@@ -108,5 +147,20 @@ else
     private void BeginDownloadCase(int caseId)
     {
         downloadUrl = $"api/vmom/cases/{caseId}/download?ts={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            try
+            {
+                await hubConnection.DisposeAsync();
+            }
+            catch (Exception)
+            {
+                // Ignore errors while disconnecting.
+            }
+        }
     }
 }

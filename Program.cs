@@ -1,4 +1,5 @@
 using FreeSql;
+using FusimAiAssiant.Hubs;
 using FusimAiAssiant.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,6 +10,7 @@ var dataDirectory = ResolveDataDirectory(
 builder.Services.AddControllers();
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
+builder.Services.AddSignalR();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddSingleton(new DataStoragePath(dataDirectory));
 
@@ -27,6 +29,7 @@ builder.Services.AddSingleton<IFreeSql>(sp =>
 builder.Services.AddSingleton<VmomInputCatalogService>();
 builder.Services.AddSingleton<VmomNamelistBuilder>();
 builder.Services.AddSingleton<IVmomCaseService, VmomCaseService>();
+builder.Services.AddHostedService<CaseStatusBroadcastService>();
 builder.Services.AddScoped<ClientSessionService>();
 
 builder.Services.AddScoped(sp =>
@@ -48,6 +51,7 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.MapControllers();
+app.MapHub<CaseStatusHub>("/hubs/case-status");
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 
