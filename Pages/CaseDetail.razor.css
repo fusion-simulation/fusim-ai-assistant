@@ -64,6 +64,13 @@
     color: var(--text-primary);
 }
 
+.action-btn-secondary:disabled {
+    background: transparent;
+    border-color: var(--border-subtle);
+    color: var(--text-secondary);
+    cursor: not-allowed;
+}
+
 .info-bar {
     display: flex;
     align-items: center;

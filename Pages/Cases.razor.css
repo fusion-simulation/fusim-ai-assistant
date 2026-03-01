@@ -69,6 +69,12 @@
     color: #fff;
 }
 
+.action-btn:disabled {
+    border-color: var(--border-subtle);
+    color: var(--text-secondary);
+    cursor: not-allowed;
+}
+
 .action-btn-secondary {
     background: var(--bg-base);
     border: 1px solid var(--border-subtle);
@@ -83,6 +89,13 @@
 .action-btn-secondary:hover {
     border-color: var(--text-primary);
     color: var(--text-primary);
+}
+
+.action-btn-secondary:disabled {
+    background: transparent;
+    border-color: var(--border-subtle);
+    color: var(--text-secondary);
+    cursor: not-allowed;
 }
 
 .alert-danger {

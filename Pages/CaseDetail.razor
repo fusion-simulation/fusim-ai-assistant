@@ -11,10 +11,10 @@
             <button class="back-btn" @onclick="GoBack">←</button>
             算例结果 (ID: @Id)
         </h2>
-        @if (selectedCase?.Status.Equals("success", StringComparison.OrdinalIgnoreCase) == true)
-        {
-            <button type="button" class="action-btn-secondary" @onclick="BeginDownloadCase">下载当前算例 zip</button>
-        }
+        <button type="button" 
+                class="action-btn-secondary" 
+                disabled="@(selectedCase?.Status.Equals("success", StringComparison.OrdinalIgnoreCase) != true)"
+                @onclick="BeginDownloadCase">下载当前算例 zip</button>
     </div>
 
     @if (!isReady)
