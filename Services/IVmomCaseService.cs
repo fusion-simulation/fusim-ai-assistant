@@ -12,6 +12,8 @@ public interface IVmomCaseService
 
     Task<CaseOverviewResponse> GetOverviewAsync(CancellationToken cancellationToken = default);
 
+    Task<(CaseOverviewResponse Overview, IReadOnlyList<CaseListItem> Cases)> GetBroadcastPayloadAsync(CancellationToken cancellationToken = default);
+
     Task<VmomCaseDetail?> GetCaseDetailAsync(int caseId, CancellationToken cancellationToken = default);
 
     Task<(byte[] Content, string FileName)?> GetCaseZipAsync(int caseId, CancellationToken cancellationToken = default);

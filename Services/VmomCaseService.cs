@@ -68,38 +68,20 @@ public class VmomCaseService : IVmomCaseService
 
     public async Task<IReadOnlyList<CaseListItem>> ListCasesAsync(CancellationToken cancellationToken = default)
     {
-        var data = await _fsql.Select<VmomCase>()
-            .Where(c => c.UserId == FixedUserId)
-            .OrderByDescending(c => c.Id)
-            .ToListAsync(cancellationToken);
-
-        return data
-            .Select(c => new CaseListItem(c.Id, c.Title, c.Status, c.CreatedAt, c.UpdatedAt, c.ErrorMessage))
-            .ToList();
+        return await ListCaseItemsAsync(cancellationToken);
     }
 
     public async Task<CaseOverviewResponse> GetOverviewAsync(CancellationToken cancellationToken = default)
     {
-        var data = await _fsql.Select<VmomCase>()
-            .Where(c => c.UserId == FixedUserId)
-            .OrderByDescending(c => c.Id)
-            .ToListAsync(cancellationToken);
+        var cases = await ListCaseItemsAsync(cancellationToken);
+        return BuildOverview(cases);
+    }
 
-        var runningCount = data.Count(c => c.Status is "running" or "queued");
-        var successCount = data.Count(c => c.Status == "success");
-        var failedCount = data.Count(c => c.Status == "failed");
-
-        var recentCases = data
-            .Take(8)
-            .Select(c => new CaseListItem(c.Id, c.Title, c.Status, c.CreatedAt, c.UpdatedAt, c.ErrorMessage))
-            .ToList();
-
-        return new CaseOverviewResponse(
-            data.Count,
-            runningCount,
-            successCount,
-            failedCount,
-            recentCases);
+    public async Task<(CaseOverviewResponse Overview, IReadOnlyList<CaseListItem> Cases)> GetBroadcastPayloadAsync(CancellationToken cancellationToken = default)
+    {
+        var cases = await ListCaseItemsAsync(cancellationToken);
+        var overview = BuildOverview(cases);
+        return (overview, cases);
     }
 
     public async Task<VmomCaseDetail?> GetCaseDetailAsync(int caseId, CancellationToken cancellationToken = default)
@@ -256,6 +238,33 @@ public class VmomCaseService : IVmomCaseService
             .Set(c => c.UpdatedAt, DateTime.UtcNow)
             .Where(c => c.Id == caseId && c.UserId == FixedUserId)
             .ExecuteAffrowsAsync();
+    }
+
+    private async Task<IReadOnlyList<CaseListItem>> ListCaseItemsAsync(CancellationToken cancellationToken)
+    {
+        var data = await _fsql.Select<VmomCase>()
+            .Where(c => c.UserId == FixedUserId)
+            .OrderByDescending(c => c.Id)
+            .ToListAsync(cancellationToken);
+
+        return data
+            .Select(c => new CaseListItem(c.Id, c.Title, c.Status, c.CreatedAt, c.UpdatedAt, c.ErrorMessage))
+            .ToList();
+    }
+
+    private static CaseOverviewResponse BuildOverview(IReadOnlyList<CaseListItem> cases)
+    {
+        var runningCount = cases.Count(c => c.Status is "running" or "queued");
+        var successCount = cases.Count(c => c.Status == "success");
+        var failedCount = cases.Count(c => c.Status == "failed");
+        var recentCases = cases.Take(8).ToList();
+
+        return new CaseOverviewResponse(
+            cases.Count,
+            runningCount,
+            successCount,
+            failedCount,
+            recentCases);
     }
 
     private static string BuildErrorMessage(string stderr, int exitCode)

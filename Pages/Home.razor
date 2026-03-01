@@ -8,7 +8,7 @@
 <PageTitle>Home</PageTitle>
 
 <div class="hero-section">
-    <h1 class="hero-title">Welcome to <span class="text-accent">Fusim AI</span></h1>
+    <h1 class="hero-title">Welcome to <span class="text-accent">vmom2</span> Web AI Shell</h1>
     <p class="hero-subtitle">Your intelligent corporate assistant.</p>
 </div>
 
@@ -145,8 +145,30 @@ else
             await InvokeAsync(StateHasChanged);
         });
 
+        hubConnection.Reconnected += async _ =>
+        {
+            try
+            {
+                await SubscribeOverviewAsync();
+                errorMessage = null;
+            }
+            catch (Exception ex)
+            {
+                errorMessage = ex.Message;
+            }
+
+            await InvokeAsync(StateHasChanged);
+        };
+
         await hubConnection.StartAsync();
-        await hubConnection.InvokeAsync("SubscribeOverview");
+        await SubscribeOverviewAsync();
+    }
+
+    private Task SubscribeOverviewAsync()
+    {
+        return hubConnection is null
+            ? Task.CompletedTask
+            : hubConnection.InvokeAsync("SubscribeOverview");
     }
 
     public async ValueTask DisposeAsync()

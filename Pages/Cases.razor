@@ -135,8 +135,30 @@ else
             await InvokeAsync(StateHasChanged);
         });
 
+        hubConnection.Reconnected += async _ =>
+        {
+            try
+            {
+                await SubscribeCasesAsync();
+                errorMessage = null;
+            }
+            catch (Exception ex)
+            {
+                errorMessage = ex.Message;
+            }
+
+            await InvokeAsync(StateHasChanged);
+        };
+
         await hubConnection.StartAsync();
-        await hubConnection.InvokeAsync("SubscribeCases");
+        await SubscribeCasesAsync();
+    }
+
+    private Task SubscribeCasesAsync()
+    {
+        return hubConnection is null
+            ? Task.CompletedTask
+            : hubConnection.InvokeAsync("SubscribeCases");
     }
 
     private void ViewCaseDetails(int caseId)

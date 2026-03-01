@@ -30,7 +30,6 @@ public class CaseStatusBroadcastService : BackgroundService
             try
             {
                 await BroadcastOnceAsync(stoppingToken);
-                await timer.WaitForNextTickAsync(stoppingToken);
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
@@ -40,20 +39,29 @@ public class CaseStatusBroadcastService : BackgroundService
             {
                 _logger.LogWarning(ex, "Failed to broadcast case status updates.");
             }
+
+            try
+            {
+                if (!await timer.WaitForNextTickAsync(stoppingToken))
+                {
+                    break;
+                }
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                break;
+            }
         }
     }
 
     private async Task BroadcastOnceAsync(CancellationToken cancellationToken)
     {
-        var overviewTask = _caseService.GetOverviewAsync(cancellationToken);
-        var casesTask = _caseService.ListCasesAsync(cancellationToken);
-
-        await Task.WhenAll(overviewTask, casesTask);
+        var (overview, cases) = await _caseService.GetBroadcastPayloadAsync(cancellationToken);
 
         await _hubContext.Clients.Group(CaseStatusHub.OverviewGroup)
-            .SendAsync("OverviewUpdated", overviewTask.Result, cancellationToken);
+            .SendAsync("OverviewUpdated", overview, cancellationToken);
 
         await _hubContext.Clients.Group(CaseStatusHub.CasesGroup)
-            .SendAsync("CasesUpdated", casesTask.Result, cancellationToken);
+            .SendAsync("CasesUpdated", cases, cancellationToken);
     }
 }
