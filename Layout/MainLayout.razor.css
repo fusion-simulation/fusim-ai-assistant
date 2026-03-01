@@ -22,41 +22,9 @@
     min-width: 0; /* Prevent flex blowout */
 }
 
-.top-row {
-    height: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 2rem;
-    background: rgba(24, 24, 27, 0.8);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border-subtle);
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
-
-.top-row .brand-text {
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--text-primary);
-}
-
-.top-row a {
-    color: var(--text-secondary);
-    text-decoration: none;
-    font-weight: 500;
-    transition: color 0.2s ease;
-}
-
-.top-row a:hover {
-    color: var(--accent-primary);
-}
-
 .content-body {
     flex-grow: 1;
-    padding: 2rem;
+    padding: 2.5rem;
     overflow-y: auto;
 }
 
