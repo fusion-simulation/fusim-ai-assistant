@@ -12,6 +12,7 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddSignalR();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddSemanticKernelFoundation(builder.Configuration);
 builder.Services.AddSingleton(new DataStoragePath(dataDirectory));
 
 builder.Services.AddSingleton<IFreeSql>(sp =>
