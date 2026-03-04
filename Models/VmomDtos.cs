@@ -37,3 +37,18 @@ public record VmomCaseDetail(
     string RzText,
     string EqprIotaText,
     string VmomOutText);
+
+public record VmomCaseWorkspace(
+    int Id,
+    string Status,
+    string WorkDirectory,
+    IReadOnlyList<string> Files);
+
+public record CaseAgentChatRequest(string Message);
+
+public record CaseAgentChatResponse(
+    string Answer,
+    string? ImageUrl,
+    string? ImageFileName,
+    IReadOnlyList<string>? AvailableVariables,
+    IReadOnlyList<string>? AvailableFiles);

@@ -9,6 +9,7 @@
   <ItemGroup>
     <PackageReference Include="FreeSql" Version="3.2.833" />
     <PackageReference Include="FreeSql.Provider.Sqlite" Version="3.2.833" />
+    <PackageReference Include="Markdig" Version="0.37.0" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.7" />
     <PackageReference Include="Microsoft.SemanticKernel" Version="1.72.0" />
     <PackageReference Include="Microsoft.SemanticKernel.Connectors.OpenAI" Version="1.72.0" />

@@ -15,7 +15,8 @@ artifacts/
 *.userosscache
 *.sln.docstates
 *.sln
-
+appsettings.json
+appsettings.*.local.json
 # Runtime / local data
 data/
 *.db
