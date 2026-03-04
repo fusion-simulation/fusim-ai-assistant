@@ -1,0 +1,14 @@
+dist: noble
+language: csharp
+mono: none
+dotnet: 8.0
+
+cache:
+  directories:
+    - $HOME/.nuget/packages
+
+script:
+  - cp appsettings-sample.json appsettings.json
+  - dotnet restore
+  - dotnet build --configuration Release --no-restore
+  - dotnet test tests/FusimAiAssiant.Tests/FusimAiAssiant.Tests.csproj --configuration Release --no-build --verbosity normal
