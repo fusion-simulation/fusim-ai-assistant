@@ -12,6 +12,7 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddSignalR();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddSemanticKernelFoundation(builder.Configuration);
 builder.Services.AddSingleton(new DataStoragePath(dataDirectory));
 
 builder.Services.AddSingleton<IFreeSql>(sp =>
@@ -29,6 +30,7 @@ builder.Services.AddSingleton<IFreeSql>(sp =>
 builder.Services.AddSingleton<VmomInputCatalogService>();
 builder.Services.AddSingleton<VmomNamelistBuilder>();
 builder.Services.AddSingleton<IVmomCaseService, VmomCaseService>();
+builder.Services.AddScoped<ICaseDetailChatAgentService, CaseDetailChatAgentService>();
 builder.Services.AddHostedService<CaseStatusBroadcastService>();
 builder.Services.AddScoped<ClientSessionService>();
 

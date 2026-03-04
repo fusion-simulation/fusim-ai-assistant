@@ -2,6 +2,9 @@
 @inject HttpClient Http
 @inject ClientSessionService Session
 @inject NavigationManager Navigation
+@using Markdig
+@using Microsoft.AspNetCore.Components
+@using FusimAiAssiant.Services
 
 <PageTitle>算例详情</PageTitle>
 
@@ -11,8 +14,8 @@
             <button class="back-btn" @onclick="GoBack">←</button>
             算例结果 (ID: @Id)
         </h2>
-        <button type="button" 
-                class="action-btn-secondary" 
+        <button type="button"
+                class="action-btn-secondary"
                 disabled="@(selectedCase?.Status.Equals("success", StringComparison.OrdinalIgnoreCase) != true)"
                 @onclick="BeginDownloadCase">下载当前算例 zip</button>
     </div>
@@ -32,26 +35,66 @@
             <div class="alert-warning">@selectedCase.ErrorMessage</div>
         }
 
-        <div class="info-bar">
-            <span class="mono">状态: </span>
-            <span class="status-tag status-@selectedCase.Status">@selectedCase.Status</span>
-        </div>
+        <div class="detail-grid">
+            <section class="result-panel">
+                <div class="info-bar">
+                    <span class="mono">状态: </span>
+                    <span class="status-tag status-@selectedCase.Status">@selectedCase.Status</span>
+                </div>
 
-        <div class="file-views">
-            <details open>
-                <summary>RZ.txt</summary>
-                <pre class="file-preview">@selectedCase.RzText</pre>
-            </details>
+                <div class="file-views">
+                    <details open>
+                        <summary>RZ.txt</summary>
+                        <pre class="file-preview">@selectedCase.RzText</pre>
+                    </details>
 
-            <details>
-                <summary>eqpr_iota.txt</summary>
-                <pre class="file-preview">@selectedCase.EqprIotaText</pre>
-            </details>
+                    <details>
+                        <summary>eqpr_iota.txt</summary>
+                        <pre class="file-preview">@selectedCase.EqprIotaText</pre>
+                    </details>
 
-            <details>
-                <summary>vmom.out</summary>
-                <pre class="file-preview">@selectedCase.VmomOutText</pre>
-            </details>
+                    <details>
+                        <summary>vmom.out</summary>
+                        <pre class="file-preview">@selectedCase.VmomOutText</pre>
+                    </details>
+                </div>
+            </section>
+
+            <aside class="chat-panel">
+                <div class="chat-head">
+                    <h3>算例助手</h3>
+                    <p>可提问结果信息，或要求绘图（例：`绘制 file=eqpr_iota.txt x=r y=q`）</p>
+                </div>
+
+                <div class="chat-messages">
+                    @foreach (var message in chatMessages)
+                    {
+                        <div class="chat-item @(message.IsUser ? "chat-user" : "chat-agent")">
+                            <div class="chat-role">@(message.IsUser ? "你" : "助手")</div>
+                            @if (message.IsUser)
+                            {
+                                <div class="chat-text user-text">@message.Content</div>
+                            }
+                            else
+                            {
+                                <div class="chat-text markdown-text">@RenderAssistantMarkdown(ChatMessageFormatter.NormalizeAssistantContent(message.Content, message.ImageUrl))</div>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(message.ImageUrl))
+                            {
+                                <img class="chat-image" src="@message.ImageUrl" alt="plot-image" />
+                            }
+                        </div>
+                    }
+                </div>
+
+                <form class="chat-input-row" @onsubmit="SendChatAsync">
+                    <textarea class="chat-input"
+                              placeholder="输入问题，或描述想画的变量图..."
+                              @bind="chatInput"
+                              disabled="@isChatBusy"></textarea>
+                    <button type="submit" class="action-btn-secondary" disabled="@isChatBusy">发送</button>
+                </form>
+            </aside>
         </div>
     }
 
@@ -69,6 +112,13 @@
     private string? errorMessage;
     private VmomCaseDetail? selectedCase;
     private string? downloadUrl;
+    private string chatInput = string.Empty;
+    private bool isChatBusy;
+    private readonly List<ChatLine> chatMessages = [];
+    private static readonly MarkdownPipeline MarkdownPipeline = new MarkdownPipelineBuilder()
+        .UseAdvancedExtensions()
+        .DisableHtml()
+        .Build();
 
     protected override async Task OnInitializedAsync()
     {
@@ -79,6 +129,7 @@
         }
 
         await LoadCaseAsync();
+        chatMessages.Add(new ChatLine(false, "可以询问当前算例结果，或让我用 gnuplot 绘制变量曲线。", null));
         isReady = true;
     }
 
@@ -96,6 +147,49 @@
         }
     }
 
+    private async Task SendChatAsync()
+    {
+        if (isChatBusy || string.IsNullOrWhiteSpace(chatInput))
+        {
+            return;
+        }
+
+        var input = chatInput.Trim();
+        chatInput = string.Empty;
+        chatMessages.Add(new ChatLine(true, input, null));
+        isChatBusy = true;
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync(
+                $"api/vmom/cases/{Id}/agent/chat",
+                new CaseAgentChatRequest(input));
+
+            if (!response.IsSuccessStatusCode)
+            {
+                chatMessages.Add(new ChatLine(false, $"请求失败: {(int)response.StatusCode}", null));
+                return;
+            }
+
+            var data = await response.Content.ReadFromJsonAsync<CaseAgentChatResponse>();
+            if (data is null)
+            {
+                chatMessages.Add(new ChatLine(false, "助手返回为空。", null));
+                return;
+            }
+
+            chatMessages.Add(new ChatLine(false, data.Answer, data.ImageUrl));
+        }
+        catch (Exception ex)
+        {
+            chatMessages.Add(new ChatLine(false, $"调用异常: {ex.Message}", null));
+        }
+        finally
+        {
+            isChatBusy = false;
+        }
+    }
+
     private void BeginDownloadCase()
     {
         downloadUrl = $"api/vmom/cases/{Id}/download?ts={DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
@@ -105,4 +199,12 @@
     {
         Navigation.NavigateTo("/cases");
     }
+
+    private static MarkupString RenderAssistantMarkdown(string content)
+    {
+        var html = Markdown.ToHtml(content ?? string.Empty, MarkdownPipeline);
+        return new MarkupString(html);
+    }
+
+    private sealed record ChatLine(bool IsUser, string Content, string? ImageUrl);
 }

@@ -10,11 +10,16 @@ public class VmomController : ControllerBase
 {
     private readonly IVmomCaseService _caseService;
     private readonly VmomInputCatalogService _inputCatalogService;
+    private readonly ICaseDetailChatAgentService _chatAgentService;
 
-    public VmomController(IVmomCaseService caseService, VmomInputCatalogService inputCatalogService)
+    public VmomController(
+        IVmomCaseService caseService,
+        VmomInputCatalogService inputCatalogService,
+        ICaseDetailChatAgentService chatAgentService)
     {
         _caseService = caseService;
         _inputCatalogService = inputCatalogService;
+        _chatAgentService = chatAgentService;
     }
 
     [HttpGet("catalog")]
@@ -84,5 +89,43 @@ public class VmomController : ControllerBase
         }
 
         return File(zip.Value.Content, "application/zip", zip.Value.FileName);
+    }
+
+    [HttpPost("cases/{caseId:int}/agent/chat")]
+    public async Task<ActionResult<CaseAgentChatResponse>> ChatCaseAgent(
+        int caseId,
+        [FromBody] CaseAgentChatRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (request is null || string.IsNullOrWhiteSpace(request.Message))
+        {
+            return BadRequest(new { message = "Message 不能为空" });
+        }
+
+        var response = await _chatAgentService.ChatAsync(caseId, request.Message, cancellationToken);
+        return Ok(response);
+    }
+
+    [HttpGet("cases/{caseId:int}/plots/{imageFileName}")]
+    public async Task<IActionResult> GetCasePlotImage(
+        int caseId,
+        string imageFileName,
+        CancellationToken cancellationToken)
+    {
+        var workspace = await _caseService.GetCaseWorkspaceAsync(caseId, cancellationToken);
+        if (workspace is null || string.IsNullOrWhiteSpace(workspace.WorkDirectory))
+        {
+            return NotFound();
+        }
+
+        var plotsDirectory = Path.Combine(workspace.WorkDirectory, "plots");
+        var rootPath = Path.GetFullPath(plotsDirectory);
+        var imagePath = Path.GetFullPath(Path.Combine(plotsDirectory, imageFileName));
+        if (!imagePath.StartsWith(rootPath, StringComparison.Ordinal) || !System.IO.File.Exists(imagePath))
+        {
+            return NotFound();
+        }
+
+        return PhysicalFile(imagePath, "image/png");
     }
 }

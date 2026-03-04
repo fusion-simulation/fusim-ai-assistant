@@ -16,5 +16,7 @@ public interface IVmomCaseService
 
     Task<VmomCaseDetail?> GetCaseDetailAsync(int caseId, CancellationToken cancellationToken = default);
 
+    Task<VmomCaseWorkspace?> GetCaseWorkspaceAsync(int caseId, CancellationToken cancellationToken = default);
+
     Task<(byte[] Content, string FileName)?> GetCaseZipAsync(int caseId, CancellationToken cancellationToken = default);
 }

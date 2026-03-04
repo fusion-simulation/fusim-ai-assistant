@@ -117,6 +117,33 @@ public class VmomCaseService : IVmomCaseService
             vmomOutText);
     }
 
+    public async Task<VmomCaseWorkspace?> GetCaseWorkspaceAsync(int caseId, CancellationToken cancellationToken = default)
+    {
+        var entity = await _fsql.Select<VmomCase>()
+            .Where(c => c.Id == caseId && c.UserId == FixedUserId)
+            .FirstAsync(cancellationToken);
+
+        if (entity is null || string.IsNullOrWhiteSpace(entity.WorkDirectory))
+        {
+            return null;
+        }
+
+        var files = Directory.Exists(entity.WorkDirectory)
+            ? Directory.GetFiles(entity.WorkDirectory, "*", SearchOption.TopDirectoryOnly)
+                .Select(Path.GetFileName)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Cast<string>()
+                .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+                .ToList()
+            : [];
+
+        return new VmomCaseWorkspace(
+            entity.Id,
+            entity.Status,
+            entity.WorkDirectory,
+            files);
+    }
+
     public async Task<(byte[] Content, string FileName)?> GetCaseZipAsync(int caseId, CancellationToken cancellationToken = default)
     {
         var entity = await _fsql.Select<VmomCase>()
