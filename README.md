@@ -1,4 +1,5 @@
 # Fusim AI Assistant
+[![Build Status](https://app.travis-ci.com/fusion-simulation/fusim-ai-assistant.svg?branch=main)](https://app.travis-ci.com/fusion-simulation/fusim-ai-assistant)
 
 一个基于 **ASP.NET Core 8 + Blazor Server** 的 `vmom2` Web 管理界面。
 
@@ -51,4 +52,3 @@ dotnet run
 配置文件：`appsettings-sample.json`
 
 需要复制一份并命名为 `appsettings.json`，然后根据需要修改配置项：
-
