@@ -1,5 +1,5 @@
 # Fusim AI Assistant
-[![Build Status](https://app.travis-ci.com/fusion-simulation/fusim-ai-assistant.svg?branch=main)](https://app.travis-ci.com/fusion-simulation/fusim-ai-assistant)
+[![CI](https://github.com/fusion-simulation/fusim-ai-assistant/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/fusion-simulation/fusim-ai-assistant/actions/workflows/ci.yml)
 
 一个基于 **ASP.NET Core 8 + Blazor Server** 的 `vmom2` Web 管理界面。
 
