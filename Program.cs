@@ -1,6 +1,8 @@
 using FreeSql;
 using FusimAiAssiant.Hubs;
 using FusimAiAssiant.Services;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Components.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 var dataDirectory = ResolveDataDirectory(
@@ -12,6 +14,17 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddSignalR();
 builder.Services.AddHttpContextAccessor();
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.Name = "FusimAiAssistant.Auth";
+        options.LoginPath = "/login";
+        options.AccessDeniedPath = "/login";
+        options.ExpireTimeSpan = TimeSpan.FromDays(7);
+        options.SlidingExpiration = true;
+    });
+builder.Services.AddAuthorization();
+builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddSemanticKernelFoundation(builder.Configuration);
 builder.Services.AddSingleton(new DataStoragePath(dataDirectory));
 
@@ -33,6 +46,7 @@ builder.Services.AddSingleton<IVmomCaseService, VmomCaseService>();
 builder.Services.AddScoped<ICaseDetailChatAgentService, CaseDetailChatAgentService>();
 builder.Services.AddHostedService<CaseStatusBroadcastService>();
 builder.Services.AddScoped<ClientSessionService>();
+builder.Services.AddScoped<ClientThemeService>();
 
 builder.Services.AddScoped(sp =>
 {
@@ -51,6 +65,8 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 app.MapHub<CaseStatusHub>("/hubs/case-status");

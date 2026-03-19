@@ -1,6 +1,6 @@
 @page "/new-case"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject HttpClient Http
-@inject ClientSessionService Session
 @inject NavigationManager Navigation
 
 <PageTitle>新建算例</PageTitle>
@@ -99,12 +99,6 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        if (!Session.IsLoggedIn)
-        {
-            Navigation.NavigateTo("/login", forceLoad: false);
-            return;
-        }
-
         try
         {
             var payload = await Http.GetFromJsonAsync<VmomInputCatalogResponse>("api/vmom/catalog");

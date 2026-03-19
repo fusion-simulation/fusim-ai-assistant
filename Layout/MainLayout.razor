@@ -1,6 +1,10 @@
 @inherits LayoutComponentBase
+@inject ClientThemeService Theme
+@implements IDisposable
 
-<div class="page-container">
+<div class="page-container"
+     data-theme="@Theme.CurrentTheme.ToAttributeValue()"
+     style="@ThemeCssOverrides">
     <div class="sidebar-wrapper">
         <NavMenu />
     </div>
@@ -10,3 +14,23 @@
         </article>
     </main>
 </div>
+
+@code {
+    private const string LightThemeCssOverrides = "color-scheme: light; --bg-base: #f4fbfb; --bg-surface: #ffffff; --bg-surface-hover: #ecfdfb; --accent-primary: #0f766e; --accent-primary-hover: #115e59; --accent-soft-bg: rgba(15, 118, 110, 0.12); --accent-soft-border: rgba(15, 118, 110, 0.22); --text-primary: #0f172a; --text-secondary: #475569; --text-inverse: #f8fafc; --border-subtle: rgba(15, 118, 110, 0.16); --border-focus: rgba(13, 148, 136, 0.3); --shadow-elevated: 0 18px 40px -24px rgba(15, 23, 42, 0.3), 0 12px 24px -24px rgba(15, 118, 110, 0.35); --alert-danger-bg: rgba(239, 68, 68, 0.08); --alert-danger-text: #dc2626; --alert-danger-border: rgba(239, 68, 68, 0.2); --alert-success-bg: rgba(22, 163, 74, 0.1); --alert-success-text: #15803d; --alert-success-border: rgba(22, 163, 74, 0.22); --status-neutral-bg: rgba(15, 23, 42, 0.05); --status-neutral-text: #334155; --status-neutral-border: rgba(148, 163, 184, 0.3); --code-inline-bg: rgba(15, 23, 42, 0.06); --code-block-bg: rgba(15, 23, 42, 0.04); --media-surface: #e2e8f0;";
+
+    private string? ThemeCssOverrides => Theme.CurrentTheme == ThemeMode.Light
+        ? LightThemeCssOverrides
+        : null;
+
+    protected override void OnInitialized()
+    {
+        Theme.ThemeChanged += HandleThemeChanged;
+    }
+
+    private void HandleThemeChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        Theme.ThemeChanged -= HandleThemeChanged;
+    }
+}

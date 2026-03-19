@@ -1,20 +1,87 @@
 :root {
-  --bg-base: #18181b; /* zinc-900 */
-  --bg-surface: #27272a; /* zinc-800 */
-  --bg-surface-hover: #3f3f46; /* zinc-700 */
-  --accent-primary: #f5a623; /* striking orange-yellow */
+  color-scheme: dark;
+  --bg-base: #18181b;
+  --bg-surface: #27272a;
+  --bg-surface-hover: #3f3f46;
+  --accent-primary: #f5a623;
   --accent-primary-hover: #eab308;
-  --text-primary: #f4f4f5; /* zinc-100 */
-  --text-secondary: #a1a1aa; /* zinc-400 */
-  --text-inverse: #18181b; /* text on bright accent backgrounds */
+  --accent-soft-bg: rgba(245, 166, 35, 0.1);
+  --accent-soft-border: rgba(245, 166, 35, 0.2);
+  --text-primary: #f4f4f5;
+  --text-secondary: #a1a1aa;
+  --text-inverse: #18181b;
   --border-subtle: rgba(255, 255, 255, 0.05);
   --border-focus: rgba(245, 166, 35, 0.5);
   --shadow-elevated: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.5);
   --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --alert-danger-bg: rgba(239, 68, 68, 0.1);
+  --alert-danger-text: #f87171;
+  --alert-danger-border: rgba(239, 68, 68, 0.2);
+  --alert-success-bg: rgba(48, 209, 88, 0.1);
+  --alert-success-text: #30d158;
+  --alert-success-border: rgba(48, 209, 88, 0.2);
+  --status-neutral-bg: rgba(255, 255, 255, 0.1);
+  --status-neutral-text: #ffffff;
+  --status-neutral-border: rgba(255, 255, 255, 0.2);
+  --status-running-bg: var(--status-neutral-bg);
+  --status-running-text: var(--status-neutral-text);
+  --status-running-border: var(--status-neutral-border);
+  --status-pending-bg: var(--status-neutral-bg);
+  --status-pending-text: var(--status-neutral-text);
+  --status-pending-border: var(--status-neutral-border);
+  --status-success-bg: var(--accent-soft-bg);
+  --status-success-text: var(--accent-primary);
+  --status-success-border: var(--accent-soft-border);
+  --code-inline-bg: rgba(0, 0, 0, 0.28);
+  --code-block-bg: rgba(0, 0, 0, 0.25);
+  --media-surface: #111111;
+}
+
+:root[data-theme='light'],
+.page-container[data-theme='light'] {
+  color-scheme: light;
+  --bg-base: #f4fbfb;
+  --bg-surface: #ffffff;
+  --bg-surface-hover: #ecfdfb;
+  --accent-primary: #0f766e;
+  --accent-primary-hover: #115e59;
+  --accent-soft-bg: rgba(15, 118, 110, 0.12);
+  --accent-soft-border: rgba(15, 118, 110, 0.22);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-inverse: #f8fafc;
+  --border-subtle: rgba(15, 118, 110, 0.16);
+  --border-focus: rgba(13, 148, 136, 0.3);
+  --shadow-elevated: 0 18px 40px -24px rgba(15, 23, 42, 0.3), 0 12px 24px -24px rgba(15, 118, 110, 0.35);
+  --alert-danger-bg: rgba(239, 68, 68, 0.08);
+  --alert-danger-text: #dc2626;
+  --alert-danger-border: rgba(239, 68, 68, 0.2);
+  --alert-success-bg: rgba(22, 163, 74, 0.1);
+  --alert-success-text: #15803d;
+  --alert-success-border: rgba(22, 163, 74, 0.22);
+  --status-neutral-bg: rgba(15, 23, 42, 0.05);
+  --status-neutral-text: #334155;
+  --status-neutral-border: rgba(148, 163, 184, 0.3);
+  --status-running-bg: rgba(13, 148, 136, 0.1);
+  --status-running-text: #0f766e;
+  --status-running-border: rgba(13, 148, 136, 0.2);
+  --status-pending-bg: rgba(217, 119, 6, 0.1);
+  --status-pending-text: #92400e;
+  --status-pending-border: rgba(217, 119, 6, 0.2);
+  --status-success-bg: #0f766e;
+  --status-success-text: #f8fafc;
+  --status-success-border: rgba(15, 118, 110, 0.34);
+  --code-inline-bg: rgba(15, 23, 42, 0.06);
+  --code-block-bg: rgba(15, 23, 42, 0.04);
+  --media-surface: #e2e8f0;
 }
 
 *, *::before, *::after {
   box-sizing: border-box;
+}
+
+html {
+  background-color: var(--bg-base);
 }
 
 body {
@@ -24,9 +91,9 @@ body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-/* Global typography resets */
 h1, h2, h3, h4, h5, h6 { color: var(--text-primary); margin-top: 0; font-weight: 600; }
 p { color: var(--text-secondary); line-height: 1.6; }
 a { color: var(--accent-primary); text-decoration: none; transition: color 0.2s; }
@@ -38,7 +105,7 @@ input, textarea, select, button { font-family: inherit; }
     color: var(--text-primary);
     bottom: 0;
     box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
-    display: none; /* Hidden by default */
+    display: none;
     left: 0;
     padding: 0.6rem 1.25rem 0.7rem 1.25rem;
     position: fixed;
@@ -54,7 +121,6 @@ input, textarea, select, button { font-family: inherit; }
     top: 0.5rem;
 }
 
-/* Global Status Tags */
 .status-tag {
     padding: 0.25rem 0.75rem;
     border-radius: 6px;
@@ -64,25 +130,27 @@ input, textarea, select, button { font-family: inherit; }
     display: inline-block;
 }
 
-/* Lowercase matching based on backend data */
-.status-tag.status-running, .status-tag.status-Running { 
-    background: rgba(255, 255, 255, 0.1); 
-    color: #ffffff; 
-    border: 1px solid rgba(255,255,255,0.2); 
+.status-tag.status-running, .status-tag.status-Running {
+    background: var(--status-running-bg);
+    color: var(--status-running-text);
+    border: 1px solid var(--status-running-border);
 }
-.status-tag.status-success, .status-tag.status-Success { 
-    background: rgba(245, 166, 35, 0.1); 
-    color: var(--accent-primary); 
-    border: 1px solid rgba(245,166,35,0.2); 
-}
-.status-tag.status-failed, .status-tag.status-Failed { 
-    background: rgba(161, 161, 170, 0.1); 
-    color: var(--text-secondary); 
-    border: 1px solid rgba(161,161,170,0.2); 
-}
+
 .status-tag.status-pending, .status-tag.status-Pending,
-.status-tag.status-queued, .status-tag.status-Queued { 
-    background: rgba(255, 255, 255, 0.1); 
-    color: #ffffff; 
-    border: 1px solid rgba(255,255,255,0.2); 
+.status-tag.status-queued, .status-tag.status-Queued {
+    background: var(--status-pending-bg);
+    color: var(--status-pending-text);
+    border: 1px solid var(--status-pending-border);
+}
+
+.status-tag.status-success, .status-tag.status-Success {
+    background: var(--status-success-bg);
+    color: var(--status-success-text);
+    border: 1px solid var(--status-success-border);
+}
+
+.status-tag.status-failed, .status-tag.status-Failed {
+    background: var(--alert-danger-bg);
+    color: var(--alert-danger-text);
+    border: 1px solid var(--alert-danger-border);
 }

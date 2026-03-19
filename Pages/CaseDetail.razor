@@ -1,6 +1,6 @@
 @page "/cases/{Id:int}"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject HttpClient Http
-@inject ClientSessionService Session
 @inject NavigationManager Navigation
 @using Markdig
 @using Microsoft.AspNetCore.Components
@@ -122,12 +122,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        if (!Session.IsLoggedIn)
-        {
-            Navigation.NavigateTo("/login", forceLoad: false);
-            return;
-        }
-
         await LoadCaseAsync();
         chatMessages.Add(new ChatLine(false, "可以询问当前算例结果，或让我用 gnuplot 绘制变量曲线。", null));
         isReady = true;

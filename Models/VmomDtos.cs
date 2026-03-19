@@ -2,7 +2,9 @@ namespace FusimAiAssiant.Models;
 
 public record LoginRequest(string Username, string Password);
 
-public record LoginResponse(bool Success, string Message, int UserId);
+public record LoginResponse(bool Success, string Message, int UserId, string Username);
+
+public record CurrentUserResponse(bool IsAuthenticated, int UserId, string Username);
 
 public record VmomInputCatalogResponse(Dictionary<string, string> Fields, string TemplateInput);
 

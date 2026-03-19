@@ -1,6 +1,8 @@
 @page "/login"
-@inject HttpClient Http
-@inject ClientSessionService Session
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
 @inject NavigationManager Navigation
 
 <PageTitle>登录</PageTitle>
@@ -37,15 +39,27 @@
 </div>
 
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState>? AuthenticationStateTask { get; set; }
+
+    [SupplyParameterFromQuery(Name = "returnUrl")]
+    public string? ReturnUrl { get; set; }
+
     private readonly LoginFormModel model = new() { Username = "guest", Password = "guest" };
     private bool isSubmitting;
     private string? errorMessage;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        if (Session.IsLoggedIn)
+        if (AuthenticationStateTask is null)
         {
-            Navigation.NavigateTo("/", forceLoad: false);
+            return;
+        }
+
+        var authenticationState = await AuthenticationStateTask;
+        if (authenticationState.User.Identity?.IsAuthenticated == true)
+        {
+            Navigation.NavigateTo(GetTargetUrl(), forceLoad: true);
         }
     }
 
@@ -56,27 +70,28 @@
             isSubmitting = true;
             errorMessage = null;
 
-            var response = await Http.PostAsJsonAsync("api/auth/login", new LoginRequest(model.Username, model.Password));
-            if (!response.IsSuccessStatusCode)
+            var payload = await JS.InvokeAsync<LoginResponse>("authManager.login", model.Username, model.Password);
+            if (!payload.Success)
             {
-                errorMessage = "登录失败，请使用 guest/guest。";
+                errorMessage = payload.Message;
                 return;
             }
 
-            var payload = await response.Content.ReadFromJsonAsync<LoginResponse>();
-            if (payload is null || !payload.Success)
-            {
-                errorMessage = payload?.Message ?? "登录失败。";
-                return;
-            }
-
-            Session.SignIn(model.Username, payload.UserId);
-            Navigation.NavigateTo("/", forceLoad: false);
+            Navigation.NavigateTo(GetTargetUrl(), forceLoad: true);
+        }
+        catch (Exception)
+        {
+            errorMessage = "登录失败，请使用 guest/guest。";
         }
         finally
         {
             isSubmitting = false;
         }
+    }
+
+    private string GetTargetUrl()
+    {
+        return string.IsNullOrWhiteSpace(ReturnUrl) ? "/" : ReturnUrl;
     }
 
     private class LoginFormModel
