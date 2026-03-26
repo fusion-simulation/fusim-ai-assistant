@@ -29,30 +29,29 @@
             </ul>
 
             <div class="user-section">
-                <div class="theme-toggle-container">
-                    <button type="button"
-                            class="theme-toggle-btn"
-                            @onclick="ToggleThemeAsync"
-                            aria-label="@ThemeToggleLabel"
-                            title="@ThemeToggleLabel">
-                        @if (Theme.CurrentTheme == ThemeMode.Dark)
-                        {
-                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                                <circle cx="12" cy="12" r="4" />
-                                <path d="M12 2.5v2.25M12 19.25v2.25M4.75 4.75 6.34 6.34M17.66 17.66l1.59 1.59M2.5 12h2.25M19.25 12h2.25M4.75 19.25l1.59-1.59M17.66 6.34l1.59-1.59" />
-                            </svg>
-                        }
-                        else
-                        {
-                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                                <path d="M20.2 15.1A8.5 8.5 0 1 1 8.9 3.8a7 7 0 1 0 11.3 11.3Z" />
-                            </svg>
-                        }
-                    </button>
-                </div>
-
                 <div class="user-info">
-                    <span class="user-name">@GetUsername(authState.User)</span>
+                    <div class="user-identity-row">
+                        <span class="user-name">@GetUsername(authState.User)</span>
+                        <button type="button"
+                                class="theme-toggle-btn"
+                                @onclick="ToggleThemeAsync"
+                                aria-label="@ThemeToggleLabel"
+                                title="@ThemeToggleLabel">
+                            @if (Theme.CurrentTheme == ThemeMode.Dark)
+                            {
+                                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                    <circle cx="12" cy="12" r="4" />
+                                    <path d="M12 2.5v2.25M12 19.25v2.25M4.75 4.75 6.34 6.34M17.66 17.66l1.59 1.59M2.5 12h2.25M19.25 12h2.25M4.75 19.25l1.59-1.59M17.66 6.34l1.59-1.59" />
+                                </svg>
+                            }
+                            else
+                            {
+                                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                    <path d="M20.2 15.1A8.5 8.5 0 1 1 8.9 3.8a7 7 0 1 0 11.3 11.3Z" />
+                                </svg>
+                            }
+                        </button>
+                    </div>
                     <span class="user-id">#@GetUserId(authState.User)</span>
                 </div>
                 <button type="button" class="btn-logout" @onclick="LogoutAsync">Logout</button>

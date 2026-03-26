@@ -46,7 +46,14 @@ public record VmomCaseWorkspace(
     string WorkDirectory,
     IReadOnlyList<string> Files);
 
-public record CaseAgentChatRequest(string Message);
+public record CaseAgentChatMessage(
+    string Role,
+    string Content,
+    string? ImageUrl);
+
+public record CaseAgentChatRequest(
+    string Message,
+    IReadOnlyList<CaseAgentChatMessage>? History);
 
 public record CaseAgentChatResponse(
     string Answer,
