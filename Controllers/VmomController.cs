@@ -102,7 +102,7 @@ public class VmomController : ControllerBase
             return BadRequest(new { message = "Message 不能为空" });
         }
 
-        var response = await _chatAgentService.ChatAsync(caseId, request.Message, cancellationToken);
+        var response = await _chatAgentService.ChatAsync(caseId, request.Message, request.History, cancellationToken);
         return Ok(response);
     }
 

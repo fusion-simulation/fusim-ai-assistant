@@ -12,6 +12,7 @@ namespace FusimAiAssiant.Services;
 public sealed class CaseDetailChatAgentService : ICaseDetailChatAgentService
 {
     private static readonly UTF8Encoding Utf8WithoutBom = new(encoderShouldEmitUTF8Identifier: false);
+    private const int MaxConversationHistoryMessages = 12;
 
     private readonly IVmomCaseService _caseService;
     private readonly IServiceProvider _serviceProvider;
@@ -30,7 +31,11 @@ public sealed class CaseDetailChatAgentService : ICaseDetailChatAgentService
         _logger = logger;
     }
 
-    public async Task<CaseAgentChatResponse> ChatAsync(int caseId, string message, CancellationToken cancellationToken = default)
+    public async Task<CaseAgentChatResponse> ChatAsync(
+        int caseId,
+        string message,
+        IReadOnlyList<CaseAgentChatMessage>? history = null,
+        CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(message))
         {
@@ -53,15 +58,26 @@ public sealed class CaseDetailChatAgentService : ICaseDetailChatAgentService
         var plotTools = new CasePlotTools(caseId, workspace, _logger);
         kernel.ImportPluginFromObject(plotTools, "vmom_plot");
 
-        var history = new ChatHistory();
-        history.AddSystemMessage(
+        var chatHistory = new ChatHistory();
+        chatHistory.AddSystemMessage(
             """
             你是 VMOM 算例分析助手。你必须基于算例上下文回答，不可编造。
             当用户要求绘图、画曲线、plot某个文件变量时，调用 vmom_plot 工具完成。
             如用户未提供文件名或变量，先调用工具查询可用文件或变量，再给出明确建议。
             回答使用中文，gnuplot 使用 set term png size 1200,640 ,简洁明确。
             """);
-        history.AddUserMessage(BuildPrompt(detail, workspace.Files, message));
+        chatHistory.AddUserMessage(BuildCaseContextPrompt(detail, workspace.Files));
+
+        foreach (var chatMessage in BuildConversationHistory(history, message))
+        {
+            if (string.Equals(chatMessage.Role, "assistant", StringComparison.OrdinalIgnoreCase))
+            {
+                chatHistory.AddAssistantMessage(chatMessage.Content);
+                continue;
+            }
+
+            chatHistory.AddUserMessage(chatMessage.Content);
+        }
 
 #pragma warning disable SKEXP0010
         var settings = new OpenAIPromptExecutionSettings
@@ -73,7 +89,7 @@ public sealed class CaseDetailChatAgentService : ICaseDetailChatAgentService
         try
         {
             var response = await _chatCompletionService.GetChatMessageContentAsync(
-                history,
+                chatHistory,
                 settings,
                 kernel,
                 cancellationToken);
@@ -107,7 +123,28 @@ public sealed class CaseDetailChatAgentService : ICaseDetailChatAgentService
         }
     }
 
-    private static string BuildPrompt(VmomCaseDetail detail, IReadOnlyList<string> files, string userMessage)
+    private static IReadOnlyList<CaseAgentChatMessage> BuildConversationHistory(
+        IReadOnlyList<CaseAgentChatMessage>? history,
+        string currentMessage)
+    {
+        var normalizedHistory = (history ?? Array.Empty<CaseAgentChatMessage>())
+            .Where(message => !string.IsNullOrWhiteSpace(message.Content))
+            .Select(message => new CaseAgentChatMessage(
+                NormalizeRole(message.Role),
+                BuildMessageContent(message),
+                message.ImageUrl))
+            .TakeLast(MaxConversationHistoryMessages)
+            .ToList();
+
+        if (!string.IsNullOrWhiteSpace(currentMessage))
+        {
+            normalizedHistory.Add(new CaseAgentChatMessage("user", currentMessage.Trim(), null));
+        }
+
+        return normalizedHistory;
+    }
+
+    private static string BuildCaseContextPrompt(VmomCaseDetail detail, IReadOnlyList<string> files)
     {
         var sb = new StringBuilder();
         sb.AppendLine($"CaseId={detail.Id}, Status={detail.Status}, Title={detail.Title}");
@@ -118,9 +155,25 @@ public sealed class CaseDetailChatAgentService : ICaseDetailChatAgentService
         sb.AppendLine(TrimForPrompt(detail.EqprIotaText, 3000));
         sb.AppendLine("vmom.out:");
         sb.AppendLine(TrimForPrompt(detail.VmomOutText, 3000));
-        sb.AppendLine();
-        sb.AppendLine($"UserMessage: {userMessage}");
         return sb.ToString();
+    }
+
+    private static string NormalizeRole(string role)
+    {
+        return string.Equals(role, "assistant", StringComparison.OrdinalIgnoreCase)
+            ? "assistant"
+            : "user";
+    }
+
+    private static string BuildMessageContent(CaseAgentChatMessage message)
+    {
+        var content = message.Content.Trim();
+        if (string.IsNullOrWhiteSpace(message.ImageUrl))
+        {
+            return content;
+        }
+
+        return $"{content}\n\n[关联图片: {message.ImageUrl}]";
     }
 
     private static string TrimForPrompt(string text, int maxChars)
