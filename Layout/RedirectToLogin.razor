@@ -1,0 +1,20 @@
+@inject NavigationManager Navigation
+
+<div class="loading-box">正在跳转到登录页...</div>
+
+@code {
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        var relativePath = Navigation.ToBaseRelativePath(Navigation.Uri);
+        var targetPath = string.IsNullOrWhiteSpace(relativePath)
+            ? "/"
+            : $"/{relativePath}";
+        var encodedReturnUrl = Uri.EscapeDataString(targetPath);
+        Navigation.NavigateTo($"/login?returnUrl={encodedReturnUrl}", forceLoad: true);
+    }
+}

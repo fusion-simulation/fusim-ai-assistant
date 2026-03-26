@@ -1,65 +1,124 @@
-@inject ClientSessionService Session
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.JSInterop
+@inject ClientThemeService Theme
 @inject NavigationManager Navigation
+@inject IJSRuntime JS
 @implements IDisposable
 
 <nav class="nav-container">
     <div class="brand-logo">vmom2</div>
-    @if (Session.IsLoggedIn)
-    {
-        <ul class="nav-list">
-            <li>
-                <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                    主页
-                </NavLink>
-            </li>
-            <li>
-                <NavLink class="nav-link" href="new-case">
-                    新建算例
-                </NavLink>
-            </li>
-            <li>
-                <NavLink class="nav-link" href="cases">
-                    算例列表
-                </NavLink>
-            </li>
-        </ul>
+    <AuthorizeView>
+        <Authorized Context="authState">
+            <ul class="nav-list">
+                <li>
+                    <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                        主页
+                    </NavLink>
+                </li>
+                <li>
+                    <NavLink class="nav-link" href="new-case">
+                        新建算例
+                    </NavLink>
+                </li>
+                <li>
+                    <NavLink class="nav-link" href="cases">
+                        算例列表
+                    </NavLink>
+                </li>
+            </ul>
 
-        <div class="user-section">
-            <div class="user-info">
-                <span class="user-name">@Session.Username</span>
-                <span class="user-id">#@Session.UserId</span>
+            <div class="user-section">
+                <div class="theme-toggle-container">
+                    <button type="button"
+                            class="theme-toggle-btn"
+                            @onclick="ToggleThemeAsync"
+                            aria-label="@ThemeToggleLabel"
+                            title="@ThemeToggleLabel">
+                        @if (Theme.CurrentTheme == ThemeMode.Dark)
+                        {
+                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <circle cx="12" cy="12" r="4" />
+                                <path d="M12 2.5v2.25M12 19.25v2.25M4.75 4.75 6.34 6.34M17.66 17.66l1.59 1.59M2.5 12h2.25M19.25 12h2.25M4.75 19.25l1.59-1.59M17.66 6.34l1.59-1.59" />
+                            </svg>
+                        }
+                        else
+                        {
+                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path d="M20.2 15.1A8.5 8.5 0 1 1 8.9 3.8a7 7 0 1 0 11.3 11.3Z" />
+                            </svg>
+                        }
+                    </button>
+                </div>
+
+                <div class="user-info">
+                    <span class="user-name">@GetUsername(authState.User)</span>
+                    <span class="user-id">#@GetUserId(authState.User)</span>
+                </div>
+                <button type="button" class="btn-logout" @onclick="LogoutAsync">Logout</button>
             </div>
-            <button type="button" class="btn-logout" @onclick="Logout">Logout</button>
-        </div>
-    }
-    else
-    {
-        <ul class="nav-list">
-            <li>
-                <NavLink class="nav-link" href="login" Match="NavLinkMatch.All">
-                    Login
-                </NavLink>
-            </li>
-        </ul>
-    }
+        </Authorized>
+        <NotAuthorized>
+            <ul class="nav-list">
+                <li>
+                    <NavLink class="nav-link" href="login" Match="NavLinkMatch.All">
+                        Login
+                    </NavLink>
+                </li>
+            </ul>
+        </NotAuthorized>
+    </AuthorizeView>
 </nav>
 
 @code {
+    private string ThemeToggleLabel => Theme.CurrentTheme == ThemeMode.Dark
+        ? "切换到亮色模式"
+        : "切换到暗色模式";
+
     protected override void OnInitialized()
     {
-        Session.SessionChanged += HandleSessionChanged;
+        Theme.ThemeChanged += HandleThemeChanged;
     }
 
-    private void HandleSessionChanged() => InvokeAsync(StateHasChanged);
-
-    private void Logout()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        Session.SignOut();
-        Navigation.NavigateTo("login", forceLoad: false);
+        if (!firstRender)
+        {
+            return;
+        }
+
+        var storedTheme = await JS.InvokeAsync<string?>("themeManager.getTheme");
+        Theme.SetTheme(ThemeMode.FromAttributeValue(storedTheme));
+    }
+
+    private void HandleThemeChanged() => InvokeAsync(StateHasChanged);
+
+    private async Task ToggleThemeAsync()
+    {
+        Theme.Toggle();
+        await JS.InvokeVoidAsync("themeManager.setTheme", Theme.CurrentTheme.ToAttributeValue());
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LogoutAsync()
+    {
+        await JS.InvokeVoidAsync("authManager.logout");
+        Navigation.NavigateTo("/login", forceLoad: true);
+    }
+
+    private static string GetUsername(ClaimsPrincipal user)
+    {
+        return user.Identity?.Name ?? string.Empty;
+    }
+
+    private static int GetUserId(ClaimsPrincipal user)
+    {
+        var userIdValue = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        return int.TryParse(userIdValue, out var userId) ? userId : 0;
     }
 
     public void Dispose()
     {
-        Session.SessionChanged -= HandleSessionChanged;
+        Theme.ThemeChanged -= HandleThemeChanged;
     }
 }

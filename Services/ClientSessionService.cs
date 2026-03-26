@@ -1,28 +1,27 @@
+using System.Security.Claims;
+
 namespace FusimAiAssiant.Services;
 
 public class ClientSessionService
 {
-    public bool IsLoggedIn { get; private set; }
-
-    public int UserId { get; private set; }
-
-    public string Username { get; private set; } = string.Empty;
-
-    public event Action? SessionChanged;
-
-    public void SignIn(string username, int userId)
+    public ClientSessionService(IHttpContextAccessor httpContextAccessor)
     {
+        var user = httpContextAccessor.HttpContext?.User;
+        if (user?.Identity?.IsAuthenticated != true)
+        {
+            return;
+        }
+
         IsLoggedIn = true;
-        Username = username;
-        UserId = userId;
-        SessionChanged?.Invoke();
+        Username = user.Identity?.Name ?? string.Empty;
+
+        var userIdValue = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        UserId = int.TryParse(userIdValue, out var userId) ? userId : 0;
     }
 
-    public void SignOut()
-    {
-        IsLoggedIn = false;
-        Username = string.Empty;
-        UserId = 0;
-        SessionChanged?.Invoke();
-    }
+    public bool IsLoggedIn { get; }
+
+    public int UserId { get; }
+
+    public string Username { get; } = string.Empty;
 }

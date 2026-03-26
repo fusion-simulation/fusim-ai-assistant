@@ -1,6 +1,6 @@
 @page "/cases"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject HttpClient Http
-@inject ClientSessionService Session
 @inject NavigationManager Navigation
 @using Microsoft.AspNetCore.SignalR.Client
 @implements IAsyncDisposable
@@ -76,19 +76,13 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        if (!Session.IsLoggedIn)
-        {
-            Navigation.NavigateTo("/login", forceLoad: false);
-            return;
-        }
-
         await LoadCasesAsync();
         isReady = true;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender || !Session.IsLoggedIn)
+        if (!firstRender)
         {
             return;
         }

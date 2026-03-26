@@ -59,7 +59,7 @@ public sealed class CaseDetailChatAgentService : ICaseDetailChatAgentService
             你是 VMOM 算例分析助手。你必须基于算例上下文回答，不可编造。
             当用户要求绘图、画曲线、plot某个文件变量时，调用 vmom_plot 工具完成。
             如用户未提供文件名或变量，先调用工具查询可用文件或变量，再给出明确建议。
-            回答使用中文，简洁明确。
+            回答使用中文，gnuplot 使用 set term png size 1200,640 ,简洁明确。
             """);
         history.AddUserMessage(BuildPrompt(detail, workspace.Files, message));
 
@@ -381,7 +381,7 @@ public sealed class CaseDetailChatAgentService : ICaseDetailChatAgentService
 
             var script =
                 $"""
-                 set terminal pngcairo size 1200,700
+                 set term png size 1200,700
                  set output '{EscapeForGnuplot(outputImagePath)}'
                  set datafile commentschars '#'
                  set grid
