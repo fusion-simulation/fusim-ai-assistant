@@ -61,3 +61,9 @@ public record CaseAgentChatResponse(
     string? ImageFileName,
     IReadOnlyList<string>? AvailableVariables,
     IReadOnlyList<string>? AvailableFiles);
+
+public record SubmitAgentProposedChange(
+    string FieldKey,
+    string CurrentValue,
+    string SuggestedValue,
+    string Reason);
