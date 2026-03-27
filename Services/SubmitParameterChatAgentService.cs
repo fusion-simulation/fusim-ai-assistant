@@ -40,13 +40,7 @@ public sealed class SubmitParameterChatAgentService : ISubmitParameterChatAgentS
         var draft = CreateDraft(request);
         var kernel = new Kernel(_serviceProvider);
         var chatHistory = new ChatHistory();
-        chatHistory.AddSystemMessage(
-            """
-            你是 VMOM 提交前参数调优助手。你只能基于用户当前输入的参数回答，不可编造运行结果。
-            你只能建议修改当前已知字段，不允许创造新参数名。
-            回答使用中文，先说明原因，再给出建议。
-            你的输出必须符合结构化响应格式。
-            """);
+        chatHistory.AddSystemMessage(BuildSystemPrompt());
         chatHistory.AddUserMessage(BuildDraftContextPrompt(request.Mode, request.Title, draft.Fields, draft.InputContent));
 
         foreach (var message in BuildConversationHistory(request.History, request.Message))
@@ -143,6 +137,21 @@ public sealed class SubmitParameterChatAgentService : ISubmitParameterChatAgentS
         sb.AppendLine("NormalizedInput:");
         sb.AppendLine(inputContent);
         return sb.ToString();
+    }
+
+    private static string BuildSystemPrompt()
+    {
+        return
+            """
+            你是 VMOM 提交前参数调优助手。你只能基于用户当前输入的参数回答，不可编造运行结果。
+            你只能建议修改当前已知字段，不允许创造新参数名。
+            回答使用中文，先说明原因，再给出建议。
+            你必须输出一个 JSON object，不要输出 Markdown、解释文字或代码块。
+            JSON 顶层字段固定为:
+            - answer: string，给用户的中文建议
+            - proposedChanges: array，可为空；每项包含 fieldKey、suggestedValue、reason
+            如果没有可调整项，proposedChanges 返回空数组。
+            """;
     }
 
     private static SubmitAgentStructuredReply ParseStructuredReply(string? content)

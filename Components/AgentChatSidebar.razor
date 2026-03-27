@@ -77,7 +77,9 @@
             </div>
         }
 
-        <form class="chat-composer" @onsubmit="HandleSendAsync">
+        <form class="chat-composer"
+              @onsubmit="HandleSendAsync"
+              @onsubmit:preventDefault>
             <textarea class="chat-input"
                       placeholder="@InputPlaceholder"
                       value="@DraftMessage"

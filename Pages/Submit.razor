@@ -13,148 +13,152 @@
 }
 else
 {
-    <div class="submit-page">
-        <section class="submit-card">
-            <h2>新建算例</h2>
+    <div class="submit-page-viewport">
+        <div class="submit-page">
+            <div class="submit-form-column">
+                <section class="submit-card">
+                    <h2>新建算例</h2>
 
-            <div class="mode-switch">
-                <button type="button"
-                        class="switch-btn @(mode == CreateMode.ByInputFile ? "active" : "")"
-                        @onclick="() => SetMode(CreateMode.ByInputFile)">通过 input.in</button>
-                <button type="button"
-                        class="switch-btn @(mode == CreateMode.ByForm ? "active" : "")"
-                        @onclick="() => SetMode(CreateMode.ByForm)">通过表单</button>
+                    <div class="mode-switch">
+                        <button type="button"
+                                class="switch-btn @(mode == CreateMode.ByInputFile ? "active" : "")"
+                                @onclick="() => SetMode(CreateMode.ByInputFile)">通过 input.in</button>
+                        <button type="button"
+                                class="switch-btn @(mode == CreateMode.ByForm ? "active" : "")"
+                                @onclick="() => SetMode(CreateMode.ByForm)">通过表单</button>
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(errorMessage))
+                    {
+                        <div class="form-alert alert-error">@errorMessage</div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(successMessage))
+                    {
+                        <div class="form-alert alert-success">@successMessage</div>
+                    }
+
+                    @if (mode == CreateMode.ByInputFile)
+                    {
+                        <EditForm Model="pageDraft" OnValidSubmit="SubmitByInputAsync">
+                            <div class="form-group">
+                                <label for="input-title" class="input-label">算例标题</label>
+                                <InputText id="input-title" class="input-field" @bind-Value="pageDraft.Title" />
+                            </div>
+
+                            <div class="form-group">
+                                <label for="input-content" class="input-label">input.in 内容（仅需 eqinpt）</label>
+                                <InputTextArea id="input-content" class="input-field code-input" @bind-Value="pageDraft.InputContent" />
+                            </div>
+
+                            <button class="submit-btn" disabled="@isSubmitting" type="submit">
+                                @(isSubmitting ? "提交中..." : "提交并运行")
+                            </button>
+                        </EditForm>
+                    }
+                    else
+                    {
+                        <EditForm Model="pageDraft" OnValidSubmit="SubmitByFormAsync">
+                            <div class="form-group">
+                                <label for="form-title" class="input-label">算例标题</label>
+                                <InputText id="form-title" class="input-field" @bind-Value="pageDraft.Title" />
+                            </div>
+
+                            <div class="form-grid">
+                                @foreach (var key in fieldOrder)
+                                {
+                                    var isArray = arrayFields.Contains(key);
+                                    <div class="form-field-card form-group">
+                                        <label class="input-label"><code>@key</code></label>
+                                        <div class="field-desc">@catalog[key]</div>
+
+                                        @if (isArray)
+                                        {
+                                            <InputTextArea class="input-field code-array" @bind-Value="draftFields[key]" />
+                                        }
+                                        else
+                                        {
+                                            <InputText class="input-field" @bind-Value="draftFields[key]" />
+                                        }
+                                    </div>
+                                }
+                            </div>
+
+                            <button class="submit-btn" disabled="@isSubmitting" type="submit">
+                                @(isSubmitting ? "提交中..." : "转换为 eqinpt 并运行")
+                            </button>
+                        </EditForm>
+                    }
+                </section>
             </div>
 
-            @if (!string.IsNullOrWhiteSpace(errorMessage))
-            {
-                <div class="form-alert alert-error">@errorMessage</div>
-            }
-
-            @if (!string.IsNullOrWhiteSpace(successMessage))
-            {
-                <div class="form-alert alert-success">@successMessage</div>
-            }
-
-            @if (mode == CreateMode.ByInputFile)
-            {
-                <EditForm Model="pageDraft" OnValidSubmit="SubmitByInputAsync">
-                    <div class="form-group">
-                        <label for="input-title" class="input-label">算例标题</label>
-                        <InputText id="input-title" class="input-field" @bind-Value="pageDraft.Title" />
-                    </div>
-
-                    <div class="form-group">
-                        <label for="input-content" class="input-label">input.in 内容（仅需 eqinpt）</label>
-                        <InputTextArea id="input-content" class="input-field code-input" @bind-Value="pageDraft.InputContent" />
-                    </div>
-
-                    <button class="submit-btn" disabled="@isSubmitting" type="submit">
-                        @(isSubmitting ? "提交中..." : "提交并运行")
-                    </button>
-                </EditForm>
-            }
-            else
-            {
-                <EditForm Model="pageDraft" OnValidSubmit="SubmitByFormAsync">
-                    <div class="form-group">
-                        <label for="form-title" class="input-label">算例标题</label>
-                        <InputText id="form-title" class="input-field" @bind-Value="pageDraft.Title" />
-                    </div>
-
-                    <div class="form-grid">
-                        @foreach (var key in fieldOrder)
+            <aside class="submit-agent-shell">
+                <AgentChatSidebar Eyebrow="AI Agent"
+                                  Title="调参助手"
+                                  Subtitle="@SubmitAgentReadyHint"
+                                  EmptyStateText=""
+                                  ShowEmptyState="false"
+                                  IsBusy="@isSubmitAgentBusy"
+                                  DraftMessage="@submitAgentInput"
+                                  DraftMessageChanged="HandleSubmitAgentInputChanged"
+                                  OnSend="SendSubmitAgentAsync"
+                                  OnReset="ResetSubmitAgentAsync"
+                                  InputPlaceholder="描述你想优化的方向，或让助手检查当前参数..."
+                                  SendButtonText="发送"
+                                  Shortcuts="SubmitAgentShortcuts"
+                                  SelectedShortcut="@selectedSubmitAgentShortcut"
+                                  ShortcutPlaceholder="选择快捷指令..."
+                                  ShortcutPlaceholderValue="@ShortcutPlaceholder"
+                                  ShortcutChanged="OnSubmitAgentShortcutSelected"
+                                  Messages="displayedSubmitAgentMessages"
+                                  AssistantMarkupFactory="RenderSubmitAgentAssistantMessage">
+                    <BodyFooterContent>
+                        @if (pendingSuggestions.Count > 0)
                         {
-                            var isArray = arrayFields.Contains(key);
-                            <div class="form-field-card form-group">
-                                <label class="input-label"><code>@key</code></label>
-                                <div class="field-desc">@catalog[key]</div>
-
-                                @if (isArray)
-                                {
-                                    <InputTextArea class="input-field code-array" @bind-Value="draftFields[key]" />
-                                }
-                                else
-                                {
-                                    <InputText class="input-field" @bind-Value="draftFields[key]" />
-                                }
-                            </div>
-                        }
-                    </div>
-
-                    <button class="submit-btn" disabled="@isSubmitting" type="submit">
-                        @(isSubmitting ? "提交中..." : "转换为 eqinpt 并运行")
-                    </button>
-                </EditForm>
-            }
-        </section>
-
-        <aside class="submit-agent-shell">
-            <AgentChatSidebar Eyebrow="AI Agent"
-                              Title="调参助手"
-                              Subtitle="@SubmitAgentReadyHint"
-                              EmptyStateText=""
-                              ShowEmptyState="false"
-                              IsBusy="@isSubmitAgentBusy"
-                              DraftMessage="@submitAgentInput"
-                              DraftMessageChanged="HandleSubmitAgentInputChanged"
-                              OnSend="SendSubmitAgentAsync"
-                              OnReset="ResetSubmitAgentAsync"
-                              InputPlaceholder="描述你想优化的方向，或让助手检查当前参数..."
-                              SendButtonText="发送"
-                              Shortcuts="SubmitAgentShortcuts"
-                              SelectedShortcut="@selectedSubmitAgentShortcut"
-                              ShortcutPlaceholder="选择快捷指令..."
-                              ShortcutPlaceholderValue="@ShortcutPlaceholder"
-                              ShortcutChanged="OnSubmitAgentShortcutSelected"
-                              Messages="displayedSubmitAgentMessages"
-                              AssistantMarkupFactory="RenderSubmitAgentAssistantMessage">
-                <BodyFooterContent>
-                    @if (pendingSuggestions.Count > 0)
-                    {
-                        <section class="suggestion-panel">
-                            <div class="suggestion-head">
-                                <div>
-                                    <div class="suggestion-eyebrow">可应用建议</div>
-                                    <h4>参数修改清单</h4>
+                            <section class="suggestion-panel">
+                                <div class="suggestion-head">
+                                    <div>
+                                        <div class="suggestion-eyebrow">可应用建议</div>
+                                        <h4>参数修改清单</h4>
+                                    </div>
+                                    <div class="suggestion-actions">
+                                        <button type="button"
+                                                class="suggestion-action-btn"
+                                                disabled="@isSubmitAgentBusy"
+                                                @onclick="ApplySelectedSuggestionsAsync">应用选中项</button>
+                                        <button type="button"
+                                                class="suggestion-action-btn suggestion-action-btn-primary"
+                                                disabled="@isSubmitAgentBusy"
+                                                @onclick="ApplyAllSuggestionsAsync">全部应用</button>
+                                    </div>
                                 </div>
-                                <div class="suggestion-actions">
-                                    <button type="button"
-                                            class="suggestion-action-btn"
-                                            disabled="@isSubmitAgentBusy"
-                                            @onclick="ApplySelectedSuggestionsAsync">应用选中项</button>
-                                    <button type="button"
-                                            class="suggestion-action-btn suggestion-action-btn-primary"
-                                            disabled="@isSubmitAgentBusy"
-                                            @onclick="ApplyAllSuggestionsAsync">全部应用</button>
-                                </div>
-                            </div>
 
-                            <div class="suggestion-list">
-                                @for (var index = 0; index < pendingSuggestions.Count; index++)
-                                {
-                                    var suggestion = pendingSuggestions[index];
-                                    <label class="suggestion-item">
-                                        <input type="checkbox"
-                                               checked="@suggestion.IsSelected"
-                                               @onchange="args => ToggleSuggestionSelection(suggestion.Id, args)" />
-                                        <div class="suggestion-body">
-                                            <div class="suggestion-key">@suggestion.FieldKey</div>
-                                            <div class="suggestion-values">
-                                                <span class="suggestion-old">@suggestion.CurrentValue</span>
-                                                <span class="suggestion-arrow">→</span>
-                                                <span class="suggestion-new">@suggestion.SuggestedValue</span>
+                                <div class="suggestion-list">
+                                    @for (var index = 0; index < pendingSuggestions.Count; index++)
+                                    {
+                                        var suggestion = pendingSuggestions[index];
+                                        <label class="suggestion-item">
+                                            <input type="checkbox"
+                                                   checked="@suggestion.IsSelected"
+                                                   @onchange="args => ToggleSuggestionSelection(suggestion.Id, args)" />
+                                            <div class="suggestion-body">
+                                                <div class="suggestion-key">@suggestion.FieldKey</div>
+                                                <div class="suggestion-values">
+                                                    <span class="suggestion-old">@suggestion.CurrentValue</span>
+                                                    <span class="suggestion-arrow">→</span>
+                                                    <span class="suggestion-new">@suggestion.SuggestedValue</span>
+                                                </div>
+                                                <p>@suggestion.Reason</p>
                                             </div>
-                                            <p>@suggestion.Reason</p>
-                                        </div>
-                                    </label>
-                                }
-                            </div>
-                        </section>
-                    }
-                </BodyFooterContent>
-            </AgentChatSidebar>
-        </aside>
+                                        </label>
+                                    }
+                                </div>
+                            </section>
+                        }
+                    </BodyFooterContent>
+                </AgentChatSidebar>
+            </aside>
+        </div>
     </div>
 }
 

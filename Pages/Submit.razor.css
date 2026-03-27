@@ -1,3 +1,11 @@
+.submit-page-viewport {
+    box-sizing: border-box;
+    margin: -1.5rem -2.5rem;
+    padding: 1.5rem 2.5rem;
+    height: 100vh;
+    overflow: hidden;
+}
+
 .submit-page {
     --agent-panel-border: color-mix(in srgb, var(--text-primary) 12%, transparent);
     --agent-panel-highlight: color-mix(in srgb, var(--accent-primary) 16%, transparent);
@@ -34,10 +42,23 @@
     grid-template-columns: minmax(0, 1fr) 420px;
     gap: 1rem;
     align-items: stretch;
+    min-height: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.submit-form-column {
+    min-width: 0;
+    min-height: 100%;
+    height: 100%;
+    overflow-y: auto;
+    padding-right: 0.2rem;
+    scrollbar-gutter: stable;
 }
 
 .submit-card {
     min-width: 0;
+    min-height: 100%;
     background: var(--bg-surface);
     padding: 2.5rem;
     border-radius: 24px;
@@ -48,6 +69,7 @@
 
 .submit-agent-shell {
     min-height: 0;
+    height: 100%;
 }
 
 .mode-switch {
@@ -257,6 +279,37 @@
 .suggestion-key {
     font-weight: 700;
     color: var(--text-primary);
+}
+
+@media (max-width: 1024px) {
+    .submit-page-viewport {
+        margin: -1rem;
+        padding: 1rem;
+        height: auto;
+        overflow: visible;
+    }
+
+    .submit-page {
+        grid-template-columns: minmax(0, 1fr);
+        min-height: auto;
+        height: auto;
+        overflow: visible;
+    }
+
+    .submit-form-column {
+        min-height: 100%;
+        height: auto;
+        overflow-y: visible;
+        padding-right: 0;
+    }
+
+    .submit-card {
+        min-height: 0;
+    }
+
+    .submit-agent-shell {
+        height: auto;
+    }
 }
 
 .suggestion-values {

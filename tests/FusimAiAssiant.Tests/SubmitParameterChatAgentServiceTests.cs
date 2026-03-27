@@ -55,4 +55,20 @@ public sealed class SubmitParameterChatAgentServiceTests
         Assert.Contains("rmajor = 7.9", prompt, StringComparison.Ordinal);
         Assert.Contains("&eqinpt", prompt, StringComparison.Ordinal);
     }
+
+    [Fact]
+    public void BuildSystemPrompt_ExplicitlyRequiresJsonOutput()
+    {
+        var method = typeof(SubmitParameterChatAgentService).GetMethod(
+            "BuildSystemPrompt",
+            BindingFlags.NonPublic | BindingFlags.Static);
+
+        Assert.NotNull(method);
+
+        var prompt = Assert.IsType<string>(method!.Invoke(null, null));
+
+        Assert.Contains("JSON", prompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("answer", prompt, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("proposedChanges", prompt, StringComparison.OrdinalIgnoreCase);
+    }
 }
