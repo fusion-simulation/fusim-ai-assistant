@@ -11,15 +11,18 @@ public class VmomController : ControllerBase
     private readonly IVmomCaseService _caseService;
     private readonly VmomInputCatalogService _inputCatalogService;
     private readonly ICaseDetailChatAgentService _chatAgentService;
+    private readonly ISubmitParameterChatAgentService _submitParameterChatAgentService;
 
     public VmomController(
         IVmomCaseService caseService,
         VmomInputCatalogService inputCatalogService,
-        ICaseDetailChatAgentService chatAgentService)
+        ICaseDetailChatAgentService chatAgentService,
+        ISubmitParameterChatAgentService submitParameterChatAgentService)
     {
         _caseService = caseService;
         _inputCatalogService = inputCatalogService;
         _chatAgentService = chatAgentService;
+        _submitParameterChatAgentService = submitParameterChatAgentService;
     }
 
     [HttpGet("catalog")]
@@ -103,6 +106,20 @@ public class VmomController : ControllerBase
         }
 
         var response = await _chatAgentService.ChatAsync(caseId, request.Message, request.History, cancellationToken);
+        return Ok(response);
+    }
+
+    [HttpPost("submit-agent/chat")]
+    public async Task<ActionResult<SubmitAgentChatResponse>> ChatSubmitAgent(
+        [FromBody] SubmitAgentChatRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (request is null || string.IsNullOrWhiteSpace(request.Message))
+        {
+            return BadRequest(new { message = "Message 不能为空" });
+        }
+
+        var response = await _submitParameterChatAgentService.ChatAsync(request, cancellationToken);
         return Ok(response);
     }
 
