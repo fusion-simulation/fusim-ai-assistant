@@ -56,6 +56,24 @@ public sealed class VmomInputDraftServiceTests
     }
 
     [Fact]
+    public void ParseEqinpt_StripsInlineCommentsFromValues()
+    {
+        var service = new VmomInputDraftService(new VmomNamelistBuilder());
+
+        var result = service.ParseEqinpt(
+            """
+            &eqinpt
+            rmajor = 7.9, ! major radius
+            eqiotb = 0.1, 0.2, ! first line comment
+                     0.3, ! second line comment
+            /
+            """);
+
+        Assert.Equal("7.9", result.Fields["rmajor"]);
+        Assert.Equal("0.1, 0.2, 0.3", result.Fields["eqiotb"]);
+    }
+
+    [Fact]
     public void ApplyChanges_UpdatesKnownFields_AndRebuildsNormalizedInput()
     {
         var service = new VmomInputDraftService(new VmomNamelistBuilder());
@@ -93,5 +111,23 @@ public sealed class VmomInputDraftServiceTests
 
         Assert.Equal("7.9", result.Fields["rmajor"]);
         Assert.Contains("unknown_key", result.RejectedKeys);
+    }
+
+    [Fact]
+    public void ApplyChanges_UpdatesKnownField_WhenChangeUsesDifferentCasing()
+    {
+        var service = new VmomInputDraftService(new VmomNamelistBuilder());
+        var draft = service.CreateDraftFromFields(new Dictionary<string, string>
+        {
+            ["RMAJOR"] = "7.9"
+        });
+
+        var result = service.ApplyChanges(
+            draft,
+            [new SubmitAgentProposedChange("rMaJoR", "7.9", "8.1", "case-insensitive update")]);
+
+        Assert.Equal("8.1", result.Fields["rmajor"]);
+        Assert.Contains("rmajor", result.Fields.Keys);
+        Assert.Contains("rmajor = 8.1,", result.InputContent, StringComparison.Ordinal);
     }
 }

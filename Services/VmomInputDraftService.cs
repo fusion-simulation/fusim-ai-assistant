@@ -38,7 +38,7 @@ public sealed class VmomInputDraftService
         VmomInputDraft draft,
         IReadOnlyList<SubmitAgentProposedChange> changes)
     {
-        var fields = new Dictionary<string, string>(draft.Fields, StringComparer.Ordinal);
+        var fields = NormalizeFields(draft.Fields);
         var rejectedKeys = new List<string>();
 
         foreach (var change in changes ?? Array.Empty<SubmitAgentProposedChange>())
@@ -48,7 +48,7 @@ public sealed class VmomInputDraftService
                 continue;
             }
 
-            var key = change.FieldKey.Trim();
+            var key = NormalizeKey(change.FieldKey);
             if (!fields.ContainsKey(key))
             {
                 rejectedKeys.Add(key);
@@ -71,7 +71,7 @@ public sealed class VmomInputDraftService
 
     private static Dictionary<string, string> NormalizeFields(IReadOnlyDictionary<string, string> fields)
     {
-        var result = new Dictionary<string, string>(StringComparer.Ordinal);
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (var (key, value) in fields)
         {
             if (string.IsNullOrWhiteSpace(key))
@@ -79,7 +79,7 @@ public sealed class VmomInputDraftService
                 continue;
             }
 
-            result[key.Trim()] = value?.Trim() ?? string.Empty;
+            result[NormalizeKey(key)] = value?.Trim() ?? string.Empty;
         }
 
         return result;
@@ -87,7 +87,7 @@ public sealed class VmomInputDraftService
 
     private static Dictionary<string, string> ParseEqinptFields(string content)
     {
-        var result = new Dictionary<string, string>(StringComparer.Ordinal);
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var lines = content.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
 
         var inEqinpt = false;
@@ -96,8 +96,8 @@ public sealed class VmomInputDraftService
 
         foreach (var rawLine in lines)
         {
-            var line = rawLine.Trim();
-            if (string.IsNullOrWhiteSpace(line) || line.StartsWith('!'))
+            var line = StripInlineComment(rawLine);
+            if (string.IsNullOrWhiteSpace(line))
             {
                 continue;
             }
@@ -123,7 +123,7 @@ public sealed class VmomInputDraftService
             {
                 FlushCurrent();
 
-                currentKey = line[..eqIndex].Trim();
+                currentKey = NormalizeKey(line[..eqIndex]);
                 currentValue.Add(line[(eqIndex + 1)..].Trim());
             }
             else if (!string.IsNullOrWhiteSpace(currentKey))
@@ -134,6 +134,13 @@ public sealed class VmomInputDraftService
 
         FlushCurrent();
         return result;
+
+        static string StripInlineComment(string line)
+        {
+            var markerIndex = line.IndexOf('!');
+            var withoutComment = markerIndex >= 0 ? line[..markerIndex] : line;
+            return withoutComment.Trim();
+        }
 
         void FlushCurrent()
         {
@@ -153,5 +160,10 @@ public sealed class VmomInputDraftService
             currentKey = null;
             currentValue.Clear();
         }
+    }
+
+    private static string NormalizeKey(string key)
+    {
+        return key.Trim().ToLowerInvariant();
     }
 }
