@@ -24,6 +24,38 @@ public sealed class VmomInputDraftServiceTests
     }
 
     [Fact]
+    public void ParseEqinpt_FlushesLastField_WhenInputEndsWithoutClosingSlash()
+    {
+        var service = new VmomInputDraftService(new VmomNamelistBuilder());
+
+        var result = service.ParseEqinpt(
+            """
+            &eqinpt
+            rmajor = 7.9,
+            elong = 1.5,
+            """);
+
+        Assert.Equal("7.9", result.Fields["rmajor"]);
+        Assert.Equal("1.5", result.Fields["elong"]);
+    }
+
+    [Fact]
+    public void ParseEqinpt_ParsesWrappedMultiLineArrayValues()
+    {
+        var service = new VmomInputDraftService(new VmomNamelistBuilder());
+
+        var result = service.ParseEqinpt(
+            """
+            &eqinpt
+            eqiotb = 0.1, 0.2, 0.3,
+                     0.4, 0.5,
+            /
+            """);
+
+        Assert.Equal("0.1, 0.2, 0.3, 0.4, 0.5", result.Fields["eqiotb"]);
+    }
+
+    [Fact]
     public void ApplyChanges_UpdatesKnownFields_AndRebuildsNormalizedInput()
     {
         var service = new VmomInputDraftService(new VmomNamelistBuilder());

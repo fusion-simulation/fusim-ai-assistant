@@ -132,6 +132,7 @@ public sealed class VmomInputDraftService
             }
         }
 
+        FlushCurrent();
         return result;
 
         void FlushCurrent()
