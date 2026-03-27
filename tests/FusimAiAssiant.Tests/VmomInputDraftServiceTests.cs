@@ -10,17 +10,19 @@ public sealed class VmomInputDraftServiceTests
     public void ParseEqinpt_ParsesScalarAndArrayFields()
     {
         var service = new VmomInputDraftService(new VmomNamelistBuilder());
-
-        var result = service.ParseEqinpt(
+        const string input =
             """
             &eqinpt
             rmajor = 7.9,
             eqiotb = 0.1, 0.2, 0.3,
             /
-            """);
+            """;
+
+        var result = service.ParseEqinpt(input);
 
         Assert.Equal("7.9", result.Fields["rmajor"]);
         Assert.Equal("0.1, 0.2, 0.3", result.Fields["eqiotb"]);
+        Assert.Equal(input, result.InputContent);
     }
 
     [Fact]
@@ -102,6 +104,22 @@ public sealed class VmomInputDraftServiceTests
 
         Assert.Equal("7.9", result.Fields["rmajor"]);
         Assert.DoesNotContain("elong", result.Fields.Keys);
+    }
+
+    [Fact]
+    public void ParseEqinpt_PreservesOriginalInputContent_WhenParsingFails()
+    {
+        var service = new VmomInputDraftService(new VmomNamelistBuilder());
+        const string input =
+            """
+            rmajor = 7.9,
+            elong = 1.5,
+            """;
+
+        var result = service.ParseEqinpt(input);
+
+        Assert.Empty(result.Fields);
+        Assert.Equal(input, result.InputContent);
     }
 
     [Fact]

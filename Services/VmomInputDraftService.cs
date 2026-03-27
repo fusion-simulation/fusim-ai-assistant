@@ -24,10 +24,11 @@ public sealed class VmomInputDraftService
 
     public VmomInputDraft ParseEqinpt(string inputContent)
     {
-        var fields = ParseEqinptFields(inputContent ?? string.Empty);
+        var originalInput = inputContent ?? string.Empty;
+        var fields = ParseEqinptFields(originalInput);
         return new VmomInputDraft(
             fields,
-            _namelistBuilder.BuildEqinptNamelist(fields),
+            originalInput,
             []);
     }
 

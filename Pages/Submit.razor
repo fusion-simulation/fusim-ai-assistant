@@ -264,9 +264,7 @@ else
             isSubmitting = true;
             var payload = new CreateCaseFromFormRequest(
                 pageDraft.Title,
-                fieldOrder.ToDictionary(
-                    key => key,
-                    key => draftFields.TryGetValue(key, out var value) ? value : string.Empty));
+                SubmitPageDraftLogic.BuildFormSubmissionFields(draftFields));
 
             var response = await Http.PostAsJsonAsync("api/vmom/cases/from-form", payload);
             if (!response.IsSuccessStatusCode)
@@ -300,6 +298,7 @@ else
         var currentDraft = GetCurrentDraft();
         if (currentDraft.Fields.Count == 0)
         {
+            pendingSuggestions.Clear();
             submitAgentMessages.Add(new CaseAgentChatMessage("assistant", "请先输入参数后再提问。", null));
             RefreshDisplayedSubmitAgentMessages();
             return;
@@ -404,10 +403,20 @@ else
             return;
         }
 
-        var updatedDraft = InputDraftService.ApplyChanges(GetCurrentDraft(), changes);
+        var currentDraft = GetCurrentDraft();
+        if (currentDraft.Fields.Count == 0)
+        {
+            pendingSuggestions.Clear();
+            submitAgentMessages.Add(new CaseAgentChatMessage("assistant", "当前参数不可解析，请先修正后再应用建议。", null));
+            RefreshDisplayedSubmitAgentMessages();
+            return;
+        }
+
+        var updatedDraft = InputDraftService.ApplyChanges(currentDraft, changes);
+        var appliedCount = SubmitPageDraftLogic.CountAppliedChanges(currentDraft, updatedDraft, changes);
         ApplyDraftToState(updatedDraft);
         pendingSuggestions.Clear();
-        submitAgentMessages.Add(new CaseAgentChatMessage("assistant", $"已应用 {changes.Length} 项参数建议。", null));
+        submitAgentMessages.Add(new CaseAgentChatMessage("assistant", $"已应用 {appliedCount} 项参数建议。", null));
         RefreshDisplayedSubmitAgentMessages();
         await Task.CompletedTask;
     }
@@ -441,9 +450,19 @@ else
         }
         else
         {
+            var parsedDraft = InputDraftService.ParseEqinpt(pageDraft.InputContent);
+            if (!SubmitPageDraftLogic.CanSwitchToFormMode(pageDraft.InputContent, parsedDraft))
+            {
+                errorMessage = "当前 input.in 无法解析为表单参数，请先修正格式。";
+                pendingSuggestions.Clear();
+                RefreshDisplayedSubmitAgentMessages();
+                return;
+            }
+
             SyncFieldsFromInput();
         }
 
+        errorMessage = null;
         mode = nextMode;
     }
 
@@ -451,9 +470,7 @@ else
     {
         if (mode == CreateMode.ByInputFile)
         {
-            var draft = InputDraftService.ParseEqinpt(pageDraft.InputContent);
-            ApplyDraftToState(draft);
-            return draft;
+            return InputDraftService.ParseEqinpt(pageDraft.InputContent);
         }
 
         var formDraft = InputDraftService.CreateDraftFromFields(draftFields);
