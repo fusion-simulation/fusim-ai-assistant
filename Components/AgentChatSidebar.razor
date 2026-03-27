@@ -1,0 +1,210 @@
+@using FusimAiAssiant.Services
+
+<section class="chat-panel">
+    <div class="chat-panel-glow"></div>
+
+    <div class="chat-head">
+        <div class="chat-head-main">
+            <div class="chat-head-copy">
+                <div class="chat-eyebrow">@Eyebrow</div>
+                <h3>@Title</h3>
+            </div>
+            <button type="button"
+                    class="chat-reset-btn"
+                    title="@ResetButtonTitle"
+                    aria-label="@ResetButtonAriaLabel"
+                    disabled="@IsBusy"
+                    @onclick="HandleResetAsync">+</button>
+        </div>
+        <p>@Subtitle</p>
+    </div>
+
+    @if (ShowEmptyState)
+    {
+        <div class="chat-empty-state">@EmptyStateText</div>
+    }
+    else
+    {
+        <div class="chat-messages">
+            @foreach (var message in Messages)
+            {
+                <div class="chat-row @(message.IsUser ? "chat-row-user" : "chat-row-agent")">
+                    <div class="chat-item @(message.IsUser ? "chat-user" : "chat-agent") @(message.IsWaiting ? "chat-waiting" : string.Empty)">
+                        <div class="chat-role">@(message.IsUser ? UserRoleLabel : AssistantRoleLabel)</div>
+                        @if (message.IsWaiting)
+                        {
+                            <div class="chat-waiting-status" aria-live="polite">
+                                <span class="chat-waiting-label">@message.Content</span>
+                                <span class="chat-waiting-dots" aria-hidden="true">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </span>
+                            </div>
+                        }
+                        else if (message.IsUser)
+                        {
+                            <div class="chat-text user-text">@message.Content</div>
+                        }
+                        else if (AssistantMarkupFactory is not null)
+                        {
+                            <div class="chat-text markdown-text">@AssistantMarkupFactory(message)</div>
+                        }
+                        else
+                        {
+                            <div class="chat-text">@message.Content</div>
+                        }
+
+                        @if (!string.IsNullOrWhiteSpace(message.ImageUrl))
+                        {
+                            <button type="button"
+                                    class="chat-image-trigger"
+                                    title="点击放大图片"
+                                    aria-label="放大图片"
+                                    @onclick="@(() => HandleImageClickedAsync(message.ImageUrl))">
+                                <img class="chat-image" src="@message.ImageUrl" alt="chat-image" />
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (BodyFooterContent is not null)
+        {
+            <div class="chat-body-footer">
+                @BodyFooterContent
+            </div>
+        }
+
+        <form class="chat-composer" @onsubmit="HandleSendAsync">
+            <textarea class="chat-input"
+                      placeholder="@InputPlaceholder"
+                      value="@DraftMessage"
+                      @oninput="HandleDraftMessageChangedAsync"
+                      disabled="@IsBusy"></textarea>
+
+            <div class="chat-composer-footer">
+                @if (Shortcuts.Count > 0)
+                {
+                    <div class="chat-shortcut-selector" aria-label="快捷指令">
+                        <select class="shortcut-select"
+                                value="@SelectedShortcut"
+                                @onchange="HandleShortcutChangedAsync"
+                                disabled="@IsBusy">
+                            <option value="@ShortcutPlaceholderValue">@ShortcutPlaceholder</option>
+                            @foreach (var shortcut in Shortcuts)
+                            {
+                                <option value="@shortcut">@shortcut</option>
+                            }
+                        </select>
+                    </div>
+                }
+
+                <button type="submit" class="chat-send-btn" disabled="@IsBusy">@SendButtonText</button>
+            </div>
+        </form>
+    }
+</section>
+
+@code {
+    [Parameter]
+    public string Eyebrow { get; set; } = "AI Agent";
+
+    [Parameter]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Subtitle { get; set; } = string.Empty;
+
+    [Parameter]
+    public string EmptyStateText { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool ShowEmptyState { get; set; }
+
+    [Parameter]
+    public bool IsBusy { get; set; }
+
+    [Parameter]
+    public string ResetButtonTitle { get; set; } = "新建会话并清空当前上下文";
+
+    [Parameter]
+    public string ResetButtonAriaLabel { get; set; } = "新建会话并清空当前上下文";
+
+    [Parameter]
+    public string DraftMessage { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback<string> DraftMessageChanged { get; set; }
+
+    [Parameter]
+    public EventCallback OnSend { get; set; }
+
+    [Parameter]
+    public EventCallback OnReset { get; set; }
+
+    [Parameter]
+    public string InputPlaceholder { get; set; } = string.Empty;
+
+    [Parameter]
+    public string SendButtonText { get; set; } = "发送";
+
+    [Parameter]
+    public string UserRoleLabel { get; set; } = "你";
+
+    [Parameter]
+    public string AssistantRoleLabel { get; set; } = "助手";
+
+    [Parameter]
+    public string SelectedShortcut { get; set; } = string.Empty;
+
+    [Parameter]
+    public string ShortcutPlaceholder { get; set; } = "选择快捷指令...";
+
+    [Parameter]
+    public string ShortcutPlaceholderValue { get; set; } = string.Empty;
+
+    [Parameter]
+    public IReadOnlyList<string> Shortcuts { get; set; } = Array.Empty<string>();
+
+    [Parameter]
+    public EventCallback<ChangeEventArgs> ShortcutChanged { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<AgentChatDisplayItem> Messages { get; set; } = Array.Empty<AgentChatDisplayItem>();
+
+    [Parameter]
+    public Func<AgentChatDisplayItem, MarkupString>? AssistantMarkupFactory { get; set; }
+
+    [Parameter]
+    public EventCallback<string?> ImageClicked { get; set; }
+
+    [Parameter]
+    public RenderFragment? BodyFooterContent { get; set; }
+
+    private Task HandleSendAsync()
+    {
+        return OnSend.InvokeAsync();
+    }
+
+    private Task HandleResetAsync()
+    {
+        return OnReset.InvokeAsync();
+    }
+
+    private Task HandleShortcutChangedAsync(ChangeEventArgs args)
+    {
+        return ShortcutChanged.InvokeAsync(args);
+    }
+
+    private Task HandleImageClickedAsync(string? imageUrl)
+    {
+        return ImageClicked.InvokeAsync(imageUrl);
+    }
+
+    private Task HandleDraftMessageChangedAsync(ChangeEventArgs args)
+    {
+        return DraftMessageChanged.InvokeAsync(args.Value?.ToString() ?? string.Empty);
+    }
+}
