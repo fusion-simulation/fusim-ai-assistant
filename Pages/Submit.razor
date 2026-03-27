@@ -2,6 +2,8 @@
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
 @inject HttpClient Http
 @inject NavigationManager Navigation
+@inject VmomInputDraftService InputDraftService
+@using Markdig
 
 <PageTitle>新建算例</PageTitle>
 
@@ -11,90 +13,176 @@
 }
 else
 {
-    <section class="submit-card">
-        <h2>新建算例</h2>
+    <div class="submit-page">
+        <section class="submit-card">
+            <h2>新建算例</h2>
 
-        <div class="mode-switch">
-            <button type="button" class="switch-btn @(mode == CreateMode.ByInputFile ? "active" : "")" @onclick="() => mode = CreateMode.ByInputFile">通过 input.in</button>
-            <button type="button" class="switch-btn @(mode == CreateMode.ByForm ? "active" : "")" @onclick="() => mode = CreateMode.ByForm">通过表单</button>
-        </div>
+            <div class="mode-switch">
+                <button type="button"
+                        class="switch-btn @(mode == CreateMode.ByInputFile ? "active" : "")"
+                        @onclick="() => SetMode(CreateMode.ByInputFile)">通过 input.in</button>
+                <button type="button"
+                        class="switch-btn @(mode == CreateMode.ByForm ? "active" : "")"
+                        @onclick="() => SetMode(CreateMode.ByForm)">通过表单</button>
+            </div>
 
-        @if (!string.IsNullOrWhiteSpace(errorMessage))
-        {
-            <div class="form-alert alert-error">@errorMessage</div>
-        }
+            @if (!string.IsNullOrWhiteSpace(errorMessage))
+            {
+                <div class="form-alert alert-error">@errorMessage</div>
+            }
 
-        @if (!string.IsNullOrWhiteSpace(successMessage))
-        {
-            <div class="form-alert alert-success">@successMessage</div>
-        }
+            @if (!string.IsNullOrWhiteSpace(successMessage))
+            {
+                <div class="form-alert alert-success">@successMessage</div>
+            }
 
-        @if (mode == CreateMode.ByInputFile)
-        {
-            <EditForm Model="fileFormModel" OnValidSubmit="SubmitByInputAsync">
-                <div class="form-group">
-                    <label for="input-title" class="input-label">算例标题</label>
-                    <InputText id="input-title" class="input-field" @bind-Value="fileFormModel.Title" />
-                </div>
+            @if (mode == CreateMode.ByInputFile)
+            {
+                <EditForm Model="pageDraft" OnValidSubmit="SubmitByInputAsync">
+                    <div class="form-group">
+                        <label for="input-title" class="input-label">算例标题</label>
+                        <InputText id="input-title" class="input-field" @bind-Value="pageDraft.Title" />
+                    </div>
 
-                <div class="form-group">
-                    <label for="input-content" class="input-label">input.in 内容（仅需 eqinpt）</label>
-                    <InputTextArea id="input-content" class="input-field code-input" @bind-Value="fileFormModel.InputContent" />
-                </div>
+                    <div class="form-group">
+                        <label for="input-content" class="input-label">input.in 内容（仅需 eqinpt）</label>
+                        <InputTextArea id="input-content" class="input-field code-input" @bind-Value="pageDraft.InputContent" />
+                    </div>
 
-                <button class="submit-btn" disabled="@isSubmitting" type="submit">
-                    @(isSubmitting ? "提交中..." : "提交并运行")
-                </button>
-            </EditForm>
-        }
-        else
-        {
-            <EditForm Model="formCaseModel" OnValidSubmit="SubmitByFormAsync">
-                <div class="form-group">
-                    <label for="form-title" class="input-label">算例标题</label>
-                    <InputText id="form-title" class="input-field" @bind-Value="formCaseModel.Title" />
-                </div>
+                    <button class="submit-btn" disabled="@isSubmitting" type="submit">
+                        @(isSubmitting ? "提交中..." : "提交并运行")
+                    </button>
+                </EditForm>
+            }
+            else
+            {
+                <EditForm Model="pageDraft" OnValidSubmit="SubmitByFormAsync">
+                    <div class="form-group">
+                        <label for="form-title" class="input-label">算例标题</label>
+                        <InputText id="form-title" class="input-field" @bind-Value="pageDraft.Title" />
+                    </div>
 
-                <div class="form-grid">
-                    @foreach (var key in fieldOrder)
+                    <div class="form-grid">
+                        @foreach (var key in fieldOrder)
+                        {
+                            var isArray = arrayFields.Contains(key);
+                            <div class="form-field-card form-group">
+                                <label class="input-label"><code>@key</code></label>
+                                <div class="field-desc">@catalog[key]</div>
+
+                                @if (isArray)
+                                {
+                                    <InputTextArea class="input-field code-array" @bind-Value="draftFields[key]" />
+                                }
+                                else
+                                {
+                                    <InputText class="input-field" @bind-Value="draftFields[key]" />
+                                }
+                            </div>
+                        }
+                    </div>
+
+                    <button class="submit-btn" disabled="@isSubmitting" type="submit">
+                        @(isSubmitting ? "提交中..." : "转换为 eqinpt 并运行")
+                    </button>
+                </EditForm>
+            }
+        </section>
+
+        <aside class="submit-agent-shell">
+            <AgentChatSidebar Eyebrow="AI Agent"
+                              Title="调参助手"
+                              Subtitle="@SubmitAgentReadyHint"
+                              EmptyStateText=""
+                              ShowEmptyState="false"
+                              IsBusy="@isSubmitAgentBusy"
+                              DraftMessage="@submitAgentInput"
+                              DraftMessageChanged="HandleSubmitAgentInputChanged"
+                              OnSend="SendSubmitAgentAsync"
+                              OnReset="ResetSubmitAgentAsync"
+                              InputPlaceholder="描述你想优化的方向，或让助手检查当前参数..."
+                              SendButtonText="发送"
+                              Shortcuts="SubmitAgentShortcuts"
+                              SelectedShortcut="@selectedSubmitAgentShortcut"
+                              ShortcutPlaceholder="选择快捷指令..."
+                              ShortcutPlaceholderValue="@ShortcutPlaceholder"
+                              ShortcutChanged="OnSubmitAgentShortcutSelected"
+                              Messages="displayedSubmitAgentMessages"
+                              AssistantMarkupFactory="RenderSubmitAgentAssistantMessage">
+                <BodyFooterContent>
+                    @if (pendingSuggestions.Count > 0)
                     {
-                        var isArray = arrayFields.Contains(key);
-                        <div class="form-field-card form-group">
-                            <label class="input-label"><code>@key</code></label>
-                            <div class="field-desc">@catalog[key]</div>
+                        <section class="suggestion-panel">
+                            <div class="suggestion-head">
+                                <div>
+                                    <div class="suggestion-eyebrow">可应用建议</div>
+                                    <h4>参数修改清单</h4>
+                                </div>
+                                <div class="suggestion-actions">
+                                    <button type="button"
+                                            class="suggestion-action-btn"
+                                            disabled="@isSubmitAgentBusy"
+                                            @onclick="ApplySelectedSuggestionsAsync">应用选中项</button>
+                                    <button type="button"
+                                            class="suggestion-action-btn suggestion-action-btn-primary"
+                                            disabled="@isSubmitAgentBusy"
+                                            @onclick="ApplyAllSuggestionsAsync">全部应用</button>
+                                </div>
+                            </div>
 
-                            @if (isArray)
-                            {
-                                <InputTextArea class="input-field code-array" @bind-Value="formFields[key]" />
-                            }
-                            else
-                            {
-                                <InputText class="input-field" @bind-Value="formFields[key]" />
-                            }
-                        </div>
+                            <div class="suggestion-list">
+                                @for (var index = 0; index < pendingSuggestions.Count; index++)
+                                {
+                                    var suggestion = pendingSuggestions[index];
+                                    <label class="suggestion-item">
+                                        <input type="checkbox"
+                                               checked="@suggestion.IsSelected"
+                                               @onchange="args => ToggleSuggestionSelection(suggestion.Id, args)" />
+                                        <div class="suggestion-body">
+                                            <div class="suggestion-key">@suggestion.FieldKey</div>
+                                            <div class="suggestion-values">
+                                                <span class="suggestion-old">@suggestion.CurrentValue</span>
+                                                <span class="suggestion-arrow">→</span>
+                                                <span class="suggestion-new">@suggestion.SuggestedValue</span>
+                                            </div>
+                                            <p>@suggestion.Reason</p>
+                                        </div>
+                                    </label>
+                                }
+                            </div>
+                        </section>
                     }
-                </div>
-
-                <button class="submit-btn" disabled="@isSubmitting" type="submit">
-                    @(isSubmitting ? "提交中..." : "转换为 eqinpt 并运行")
-                </button>
-            </EditForm>
-        }
-    </section>
+                </BodyFooterContent>
+            </AgentChatSidebar>
+        </aside>
+    </div>
 }
 
 @code {
-    private readonly SubmitFormModel fileFormModel = new();
+    private static readonly IReadOnlyList<string> SubmitAgentShortcuts = SubmitAgentShortcutCatalog.DefaultShortcuts;
+    private const string SubmitAgentReadyHint = "根据当前输入参数给出调整建议，并在确认后直接回写";
+    private const string ShortcutPlaceholder = "";
+    private static readonly MarkdownPipeline MarkdownPipeline = new MarkdownPipelineBuilder()
+        .UseAdvancedExtensions()
+        .DisableHtml()
+        .Build();
+
+    private readonly SubmitPageDraftModel pageDraft = new();
     private readonly Dictionary<string, string> catalog = new();
-    private readonly Dictionary<string, string> formFields = new();
+    private readonly Dictionary<string, string> draftFields = new(StringComparer.Ordinal);
     private readonly List<string> fieldOrder = new();
     private readonly HashSet<string> arrayFields = ["eqprzi", "eqiotb", "rmb", "ymb"];
-    private readonly FormCaseModel formCaseModel = new();
+    private readonly List<CaseAgentChatMessage> submitAgentMessages = [];
 
     private bool isReady;
     private bool isSubmitting;
+    private bool isSubmitAgentBusy;
     private string? errorMessage;
     private string? successMessage;
+    private string submitAgentInput = string.Empty;
+    private string selectedSubmitAgentShortcut = ShortcutPlaceholder;
+    private IReadOnlyList<AgentChatDisplayItem> displayedSubmitAgentMessages = Array.Empty<AgentChatDisplayItem>();
+    private List<SubmitAgentSuggestionItem> pendingSuggestions = [];
     private CreateMode mode = CreateMode.ByInputFile;
 
     protected override async Task OnInitializedAsync()
@@ -110,16 +198,10 @@ else
                     fieldOrder.Add(kv.Key);
                 }
 
-                fileFormModel.InputContent = payload.TemplateInput;
-                var defaults = ParseEqinptDefaults(payload.TemplateInput);
-                foreach (var key in fieldOrder)
-                {
-                    formFields[key] = defaults.TryGetValue(key, out var value) ? value : string.Empty;
-                }
+                ApplyDraftToState(InputDraftService.ParseEqinpt(payload.TemplateInput));
             }
 
-            fileFormModel.Title = $"case-{DateTime.Now:yyyyMMdd-HHmmss}";
-            formCaseModel.Title = fileFormModel.Title;
+            pageDraft.Title = $"case-{DateTime.Now:yyyyMMdd-HHmmss}";
         }
         catch (Exception ex)
         {
@@ -127,6 +209,7 @@ else
         }
         finally
         {
+            RefreshDisplayedSubmitAgentMessages();
             isReady = true;
         }
     }
@@ -136,16 +219,20 @@ else
         errorMessage = null;
         successMessage = null;
 
-        if (string.IsNullOrWhiteSpace(fileFormModel.InputContent))
+        if (string.IsNullOrWhiteSpace(pageDraft.InputContent))
         {
             errorMessage = "input.in 不能为空。";
             return;
         }
 
+        SyncFieldsFromInput();
+
         try
         {
             isSubmitting = true;
-            var response = await Http.PostAsJsonAsync("api/vmom/cases", new CreateCaseRequest(fileFormModel.Title, fileFormModel.InputContent));
+            var response = await Http.PostAsJsonAsync(
+                "api/vmom/cases",
+                new CreateCaseRequest(pageDraft.Title, pageDraft.InputContent));
             if (!response.IsSuccessStatusCode)
             {
                 errorMessage = await response.Content.ReadAsStringAsync();
@@ -153,7 +240,8 @@ else
             }
 
             successMessage = "算例已提交。";
-            await Task.Delay(1500); Navigation.NavigateTo("/cases", forceLoad: false);
+            await Task.Delay(1500);
+            Navigation.NavigateTo("/cases", forceLoad: false);
         }
         catch (Exception ex)
         {
@@ -169,15 +257,16 @@ else
     {
         errorMessage = null;
         successMessage = null;
+        SyncInputFromFields();
 
         try
         {
             isSubmitting = true;
             var payload = new CreateCaseFromFormRequest(
-                formCaseModel.Title,
+                pageDraft.Title,
                 fieldOrder.ToDictionary(
                     key => key,
-                    key => formFields.TryGetValue(key, out var value) ? value : string.Empty));
+                    key => draftFields.TryGetValue(key, out var value) ? value : string.Empty));
 
             var response = await Http.PostAsJsonAsync("api/vmom/cases/from-form", payload);
             if (!response.IsSuccessStatusCode)
@@ -187,7 +276,8 @@ else
             }
 
             successMessage = "算例已提交。";
-            await Task.Delay(1500); Navigation.NavigateTo("/cases", forceLoad: false);
+            await Task.Delay(1500);
+            Navigation.NavigateTo("/cases", forceLoad: false);
         }
         catch (Exception ex)
         {
@@ -199,73 +289,216 @@ else
         }
     }
 
-    private static Dictionary<string, string> ParseEqinptDefaults(string content)
+    private async Task SendSubmitAgentAsync()
     {
-        var result = new Dictionary<string, string>();
-        var lines = content.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
-
-        var inEqinpt = false;
-        string? currentKey = null;
-        var currentValue = new List<string>();
-
-        foreach (var rawLine in lines)
+        if (isSubmitAgentBusy || string.IsNullOrWhiteSpace(submitAgentInput))
         {
-            var line = rawLine.Trim();
-            if (string.IsNullOrWhiteSpace(line) || line.StartsWith('!'))
-            {
-                continue;
-            }
-
-            if (!inEqinpt)
-            {
-                if (line.StartsWith("&eqinpt", StringComparison.OrdinalIgnoreCase))
-                {
-                    inEqinpt = true;
-                }
-                continue;
-            }
-
-            if (line == "/")
-            {
-                FlushCurrent();
-                break;
-            }
-
-            var eqIndex = line.IndexOf('=');
-            if (eqIndex >= 0)
-            {
-                FlushCurrent();
-
-                currentKey = line[..eqIndex].Trim();
-                var valuePart = line[(eqIndex + 1)..].Trim();
-                currentValue.Add(valuePart);
-            }
-            else if (!string.IsNullOrWhiteSpace(currentKey))
-            {
-                currentValue.Add(line);
-            }
+            return;
         }
 
-        return result;
-
-        void FlushCurrent()
+        var input = submitAgentInput.Trim();
+        var currentDraft = GetCurrentDraft();
+        if (currentDraft.Fields.Count == 0)
         {
-            if (string.IsNullOrWhiteSpace(currentKey) || currentValue.Count == 0)
+            submitAgentMessages.Add(new CaseAgentChatMessage("assistant", "请先输入参数后再提问。", null));
+            RefreshDisplayedSubmitAgentMessages();
+            return;
+        }
+
+        var requestHistory = submitAgentMessages.ToArray();
+        submitAgentInput = string.Empty;
+        submitAgentMessages.Add(new CaseAgentChatMessage("user", input, null));
+        isSubmitAgentBusy = true;
+        RefreshDisplayedSubmitAgentMessages();
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync(
+                "api/vmom/submit-agent/chat",
+                new SubmitAgentChatRequest(
+                    mode.ToString(),
+                    pageDraft.Title,
+                    currentDraft.InputContent,
+                    currentDraft.Fields,
+                    input,
+                    requestHistory));
+
+            if (!response.IsSuccessStatusCode)
             {
-                currentKey = null;
-                currentValue.Clear();
+                submitAgentMessages.Add(new CaseAgentChatMessage("assistant", $"请求失败: {(int)response.StatusCode}", null));
+                pendingSuggestions = [];
                 return;
             }
 
-            var merged = string.Join(" ", currentValue)
-                .Trim()
-                .TrimEnd(',')
-                .Trim();
+            var data = await response.Content.ReadFromJsonAsync<SubmitAgentChatResponse>();
+            if (data is null)
+            {
+                submitAgentMessages.Add(new CaseAgentChatMessage("assistant", "助手返回为空。", null));
+                pendingSuggestions = [];
+                return;
+            }
 
-            result[currentKey] = merged;
-            currentKey = null;
-            currentValue.Clear();
+            submitAgentMessages.Add(new CaseAgentChatMessage("assistant", data.Answer, null));
+            pendingSuggestions = SubmitAgentSuggestionViewBuilder.Build(data.ProposedChanges).ToList();
         }
+        catch (Exception ex)
+        {
+            submitAgentMessages.Add(new CaseAgentChatMessage("assistant", $"调用异常: {ex.Message}", null));
+            pendingSuggestions = [];
+        }
+        finally
+        {
+            isSubmitAgentBusy = false;
+            RefreshDisplayedSubmitAgentMessages();
+        }
+    }
+
+    private Task ResetSubmitAgentAsync()
+    {
+        if (isSubmitAgentBusy)
+        {
+            return Task.CompletedTask;
+        }
+
+        submitAgentMessages.Clear();
+        pendingSuggestions.Clear();
+        submitAgentInput = string.Empty;
+        selectedSubmitAgentShortcut = ShortcutPlaceholder;
+        RefreshDisplayedSubmitAgentMessages();
+        return Task.CompletedTask;
+    }
+
+    private Task HandleSubmitAgentInputChanged(string value)
+    {
+        submitAgentInput = value;
+        return Task.CompletedTask;
+    }
+
+    private void OnSubmitAgentShortcutSelected(ChangeEventArgs args)
+    {
+        var shortcut = args.Value?.ToString() ?? ShortcutPlaceholder;
+        selectedSubmitAgentShortcut = shortcut;
+
+        if (string.IsNullOrWhiteSpace(shortcut))
+        {
+            return;
+        }
+
+        submitAgentInput = SubmitAgentShortcutCatalog.ApplyShortcut(submitAgentInput, shortcut);
+        selectedSubmitAgentShortcut = ShortcutPlaceholder;
+    }
+
+    private async Task ApplySelectedSuggestionsAsync()
+    {
+        var changes = pendingSuggestions
+            .Where(item => item.IsSelected)
+            .Select(item => new SubmitAgentProposedChange(
+                item.FieldKey,
+                item.CurrentValue,
+                item.SuggestedValue,
+                item.Reason))
+            .ToArray();
+
+        if (changes.Length == 0)
+        {
+            return;
+        }
+
+        var updatedDraft = InputDraftService.ApplyChanges(GetCurrentDraft(), changes);
+        ApplyDraftToState(updatedDraft);
+        pendingSuggestions.Clear();
+        submitAgentMessages.Add(new CaseAgentChatMessage("assistant", $"已应用 {changes.Length} 项参数建议。", null));
+        RefreshDisplayedSubmitAgentMessages();
+        await Task.CompletedTask;
+    }
+
+    private Task ApplyAllSuggestionsAsync()
+    {
+        pendingSuggestions = pendingSuggestions
+            .Select(item => item with { IsSelected = true })
+            .ToList();
+        return ApplySelectedSuggestionsAsync();
+    }
+
+    private void ToggleSuggestionSelection(string id, ChangeEventArgs args)
+    {
+        var isSelected = args.Value as bool? ?? false;
+        pendingSuggestions = pendingSuggestions
+            .Select(item => item.Id == id ? item with { IsSelected = isSelected } : item)
+            .ToList();
+    }
+
+    private void SetMode(CreateMode nextMode)
+    {
+        if (mode == nextMode)
+        {
+            return;
+        }
+
+        if (nextMode == CreateMode.ByInputFile)
+        {
+            SyncInputFromFields();
+        }
+        else
+        {
+            SyncFieldsFromInput();
+        }
+
+        mode = nextMode;
+    }
+
+    private VmomInputDraft GetCurrentDraft()
+    {
+        if (mode == CreateMode.ByInputFile)
+        {
+            var draft = InputDraftService.ParseEqinpt(pageDraft.InputContent);
+            ApplyDraftToState(draft);
+            return draft;
+        }
+
+        var formDraft = InputDraftService.CreateDraftFromFields(draftFields);
+        pageDraft.InputContent = formDraft.InputContent;
+        return formDraft;
+    }
+
+    private void SyncFieldsFromInput()
+    {
+        ApplyDraftToState(InputDraftService.ParseEqinpt(pageDraft.InputContent));
+    }
+
+    private void SyncInputFromFields()
+    {
+        var draft = InputDraftService.CreateDraftFromFields(draftFields);
+        pageDraft.InputContent = draft.InputContent;
+    }
+
+    private void ApplyDraftToState(VmomInputDraft draft)
+    {
+        pageDraft.InputContent = draft.InputContent;
+
+        foreach (var key in fieldOrder)
+        {
+            draftFields[key] = draft.Fields.TryGetValue(key, out var value) ? value : string.Empty;
+        }
+
+        foreach (var entry in draft.Fields)
+        {
+            if (!draftFields.ContainsKey(entry.Key))
+            {
+                draftFields[entry.Key] = entry.Value;
+            }
+        }
+    }
+
+    private void RefreshDisplayedSubmitAgentMessages()
+    {
+        displayedSubmitAgentMessages = AgentChatViewBuilder.Build(submitAgentMessages, isSubmitAgentBusy);
+    }
+
+    private static MarkupString RenderSubmitAgentAssistantMessage(AgentChatDisplayItem message)
+    {
+        var html = Markdown.ToHtml(message.Content ?? string.Empty, MarkdownPipeline);
+        return new MarkupString(html);
     }
 
     private enum CreateMode
@@ -274,14 +507,10 @@ else
         ByForm
     }
 
-    private class SubmitFormModel
+    private sealed class SubmitPageDraftModel
     {
         public string Title { get; set; } = string.Empty;
-        public string InputContent { get; set; } = string.Empty;
-    }
 
-    private class FormCaseModel
-    {
-        public string Title { get; set; } = string.Empty;
+        public string InputContent { get; set; } = string.Empty;
     }
 }
