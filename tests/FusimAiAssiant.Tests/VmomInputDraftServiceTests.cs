@@ -74,6 +74,37 @@ public sealed class VmomInputDraftServiceTests
     }
 
     [Fact]
+    public void ParseEqinpt_ParsesMultipleAssignmentsOnOneLine()
+    {
+        var service = new VmomInputDraftService(new VmomNamelistBuilder());
+
+        var result = service.ParseEqinpt(
+            """
+            &eqinpt
+            rmajor = 7.9, elong = 1.5,
+            /
+            """);
+
+        Assert.Equal("7.9", result.Fields["rmajor"]);
+        Assert.Equal("1.5", result.Fields["elong"]);
+    }
+
+    [Fact]
+    public void ParseEqinpt_StopsAtSlashOnAssignmentLine()
+    {
+        var service = new VmomInputDraftService(new VmomNamelistBuilder());
+
+        var result = service.ParseEqinpt(
+            """
+            &eqinpt
+            rmajor = 7.9 / elong = 1.5,
+            """);
+
+        Assert.Equal("7.9", result.Fields["rmajor"]);
+        Assert.DoesNotContain("elong", result.Fields.Keys);
+    }
+
+    [Fact]
     public void ApplyChanges_UpdatesKnownFields_AndRebuildsNormalizedInput()
     {
         var service = new VmomInputDraftService(new VmomNamelistBuilder());

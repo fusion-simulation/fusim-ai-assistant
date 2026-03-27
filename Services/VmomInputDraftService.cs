@@ -1,4 +1,6 @@
 using FusimAiAssiant.Models;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace FusimAiAssiant.Services;
 
@@ -9,6 +11,10 @@ public sealed record VmomInputDraft(
 
 public sealed class VmomInputDraftService
 {
+    private static readonly Regex AssignmentRegex = new(
+        @"(?<key>[A-Za-z_][A-Za-z0-9_]*)\s*=",
+        RegexOptions.Compiled);
+
     private readonly VmomNamelistBuilder _namelistBuilder;
 
     public VmomInputDraftService(VmomNamelistBuilder namelistBuilder)
@@ -88,11 +94,35 @@ public sealed class VmomInputDraftService
     private static Dictionary<string, string> ParseEqinptFields(string content)
     {
         var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        var lines = content.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
+        var eqinptBody = ExtractEqinptBody(content ?? string.Empty);
+        if (string.IsNullOrWhiteSpace(eqinptBody))
+        {
+            return result;
+        }
 
+        var matches = AssignmentRegex.Matches(eqinptBody);
+        for (var i = 0; i < matches.Count; i++)
+        {
+            var match = matches[i];
+            var nextIndex = i + 1 < matches.Count ? matches[i + 1].Index : eqinptBody.Length;
+            var valueSegment = eqinptBody[(match.Index + match.Length)..nextIndex];
+            var value = valueSegment.Trim().TrimEnd(',').Trim();
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                continue;
+            }
+
+            result[NormalizeKey(match.Groups["key"].Value)] = value;
+        }
+
+        return result;
+    }
+
+    private static string ExtractEqinptBody(string content)
+    {
+        var lines = content.Replace("\r\n", "\n", StringComparison.Ordinal).Split('\n');
+        var sb = new StringBuilder();
         var inEqinpt = false;
-        string? currentKey = null;
-        var currentValue = new List<string>();
 
         foreach (var rawLine in lines)
         {
@@ -104,62 +134,58 @@ public sealed class VmomInputDraftService
 
             if (!inEqinpt)
             {
-                if (line.StartsWith("&eqinpt", StringComparison.OrdinalIgnoreCase))
+                var marker = line.IndexOf("&eqinpt", StringComparison.OrdinalIgnoreCase);
+                if (marker < 0)
                 {
-                    inEqinpt = true;
+                    continue;
                 }
 
-                continue;
+                inEqinpt = true;
+                line = line[(marker + "&eqinpt".Length)..].Trim();
+                if (line.Length == 0)
+                {
+                    continue;
+                }
             }
 
-            if (line == "/")
+            var slashIndex = line.IndexOf('/');
+            if (slashIndex >= 0)
             {
-                FlushCurrent();
+                var beforeSlash = line[..slashIndex].Trim();
+                if (beforeSlash.Length > 0)
+                {
+                    AppendSegment(sb, beforeSlash);
+                }
+
                 break;
             }
 
-            var eqIndex = line.IndexOf('=');
-            if (eqIndex >= 0)
-            {
-                FlushCurrent();
-
-                currentKey = NormalizeKey(line[..eqIndex]);
-                currentValue.Add(line[(eqIndex + 1)..].Trim());
-            }
-            else if (!string.IsNullOrWhiteSpace(currentKey))
-            {
-                currentValue.Add(line);
-            }
+            AppendSegment(sb, line);
         }
 
-        FlushCurrent();
-        return result;
+        return sb.ToString();
+    }
 
-        static string StripInlineComment(string line)
+    private static void AppendSegment(StringBuilder sb, string segment)
+    {
+        if (segment.Length == 0)
         {
-            var markerIndex = line.IndexOf('!');
-            var withoutComment = markerIndex >= 0 ? line[..markerIndex] : line;
-            return withoutComment.Trim();
+            return;
         }
 
-        void FlushCurrent()
+        if (sb.Length > 0)
         {
-            if (string.IsNullOrWhiteSpace(currentKey) || currentValue.Count == 0)
-            {
-                currentKey = null;
-                currentValue.Clear();
-                return;
-            }
-
-            var merged = string.Join(" ", currentValue)
-                .Trim()
-                .TrimEnd(',')
-                .Trim();
-
-            result[currentKey] = merged;
-            currentKey = null;
-            currentValue.Clear();
+            sb.Append(' ');
         }
+
+        sb.Append(segment);
+    }
+
+    private static string StripInlineComment(string line)
+    {
+        var markerIndex = line.IndexOf('!');
+        var withoutComment = markerIndex >= 0 ? line[..markerIndex] : line;
+        return withoutComment.Trim();
     }
 
     private static string NormalizeKey(string key)
