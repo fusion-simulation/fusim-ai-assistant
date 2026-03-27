@@ -1,11 +1,75 @@
+.submit-page-viewport {
+    box-sizing: border-box;
+    margin: -1.5rem -2.5rem;
+    padding: 1.5rem 2.5rem;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.submit-page {
+    --agent-panel-border: color-mix(in srgb, var(--text-primary) 12%, transparent);
+    --agent-panel-highlight: color-mix(in srgb, var(--accent-primary) 16%, transparent);
+    --agent-panel-sheen: color-mix(in srgb, var(--text-primary) 6%, transparent);
+    --agent-panel-bg-start: color-mix(in srgb, var(--bg-surface) 88%, var(--accent-primary) 12%);
+    --agent-panel-bg-end: color-mix(in srgb, var(--bg-base) 86%, var(--bg-surface) 14%);
+    --agent-head-divider: color-mix(in srgb, var(--text-primary) 8%, transparent);
+    --agent-head-bg: color-mix(in srgb, var(--bg-surface) 76%, transparent);
+    --agent-eyebrow-bg: color-mix(in srgb, var(--text-primary) 7%, transparent);
+    --agent-eyebrow-text: color-mix(in srgb, var(--text-secondary) 88%, var(--text-primary) 12%);
+    --agent-head-subtext: color-mix(in srgb, var(--text-secondary) 92%, var(--text-primary) 8%);
+    --agent-text: var(--text-primary);
+    --agent-muted-text: color-mix(in srgb, var(--text-secondary) 84%, transparent);
+    --agent-user-bubble-bg: color-mix(in srgb, var(--bg-surface-hover) 74%, var(--bg-base) 26%);
+    --agent-user-bubble-border: color-mix(in srgb, var(--text-primary) 10%, transparent);
+    --agent-user-bubble-shadow: color-mix(in srgb, var(--bg-base) 72%, transparent);
+    --agent-image-border: color-mix(in srgb, var(--text-primary) 10%, transparent);
+    --agent-composer-border: color-mix(in srgb, var(--text-primary) 10%, transparent);
+    --agent-composer-bg: color-mix(in srgb, var(--bg-surface) 82%, var(--bg-base) 18%);
+    --agent-composer-shadow: color-mix(in srgb, var(--bg-base) 70%, transparent);
+    --agent-input-bg: color-mix(in srgb, var(--bg-base) 78%, var(--bg-surface) 22%);
+    --agent-input-border: color-mix(in srgb, var(--text-primary) 9%, transparent);
+    --agent-input-placeholder: color-mix(in srgb, var(--text-secondary) 70%, transparent);
+    --agent-select-bg: color-mix(in srgb, var(--bg-base) 65%, var(--bg-surface) 35%);
+    --agent-select-border: color-mix(in srgb, var(--text-primary) 10%, transparent);
+    --agent-select-text: var(--text-primary);
+    --agent-select-option-bg: var(--bg-surface);
+    --agent-select-option-text: var(--text-primary);
+    --agent-send-bg-start: color-mix(in srgb, var(--accent-primary) 72%, white 28%);
+    --agent-send-bg-end: var(--accent-primary);
+    --agent-send-text: var(--text-inverse);
+    --agent-send-shadow: color-mix(in srgb, var(--accent-primary) 55%, transparent);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 420px;
+    gap: 1rem;
+    align-items: stretch;
+    min-height: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.submit-form-column {
+    min-width: 0;
+    min-height: 100%;
+    height: 100%;
+    overflow-y: auto;
+    padding-right: 0.2rem;
+    scrollbar-gutter: stable;
+}
+
 .submit-card {
+    min-width: 0;
+    min-height: 100%;
     background: var(--bg-surface);
     padding: 2.5rem;
-    border-radius: 12px;
+    border-radius: 24px;
     border: 1px solid var(--border-subtle);
     box-shadow: var(--shadow-elevated);
     width: 100%;
-    
+}
+
+.submit-agent-shell {
+    min-height: 0;
+    height: 100%;
 }
 
 .mode-switch {
@@ -58,7 +122,8 @@
     box-shadow: 0 0 0 3px var(--border-focus);
 }
 
-::deep .code-input, ::deep .code-array {
+::deep .code-input,
+::deep .code-array {
     font-family: monospace;
     min-height: 150px;
 }
@@ -72,7 +137,6 @@
     border-radius: 8px;
     cursor: pointer;
     transition: transform 0.1s, filter 0.2s;
-    
 }
 
 .submit-btn:hover {
@@ -83,7 +147,6 @@
     transform: scale(0.98);
 }
 
-/* Custom premium alerts */
 .form-alert {
     padding: 1rem 1.5rem;
     border-radius: 8px;
@@ -103,7 +166,6 @@
     border: 1px solid var(--alert-success-border);
 }
 
-/* Form Grid */
 .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -115,7 +177,7 @@
     border: 1px solid var(--border-subtle);
     padding: 1rem;
     border-radius: 8px;
-    margin-bottom: 0; /* overridden by gap */
+    margin-bottom: 0;
 }
 
 .field-desc {
@@ -124,13 +186,201 @@
     margin-bottom: 0.75rem;
 }
 
-/* Make full width for arrays */
 .form-field-card:has(::deep .code-array) {
     grid-column: 1 / -1;
 }
 
+.suggestion-panel {
+    margin: 0 0.85rem 0.75rem;
+    padding: 0.95rem;
+    border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+    border-radius: 20px;
+    background: color-mix(in srgb, var(--bg-surface) 84%, transparent);
+    backdrop-filter: blur(10px);
+}
+
+.suggestion-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+    margin-bottom: 0.85rem;
+}
+
+.suggestion-head h4 {
+    margin: 0.35rem 0 0;
+    font-size: 1rem;
+}
+
+.suggestion-eyebrow {
+    display: inline-flex;
+    padding: 0.2rem 0.5rem;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+    color: var(--text-secondary);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.suggestion-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.suggestion-action-btn {
+    border: 1px solid color-mix(in srgb, var(--text-primary) 10%, transparent);
+    background: color-mix(in srgb, var(--bg-base) 78%, transparent);
+    color: var(--text-primary);
+    border-radius: 999px;
+    padding: 0.5rem 0.8rem;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.suggestion-action-btn-primary {
+    background: linear-gradient(135deg, var(--agent-send-bg-start), var(--agent-send-bg-end));
+    color: var(--agent-send-text);
+    border-color: transparent;
+}
+
+.suggestion-action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.suggestion-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.suggestion-item {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.75rem;
+    align-items: flex-start;
+    padding: 0.85rem 0.9rem;
+    border-radius: 16px;
+    background: color-mix(in srgb, var(--bg-base) 72%, transparent);
+    border: 1px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+
+.suggestion-item input {
+    margin-top: 0.15rem;
+}
+
+.suggestion-body {
+    min-width: 0;
+}
+
+.suggestion-key {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+@media (max-width: 1024px) {
+    .submit-page-viewport {
+        margin: -1rem;
+        padding: 1rem;
+        height: auto;
+        overflow: visible;
+    }
+
+    .submit-page {
+        grid-template-columns: minmax(0, 1fr);
+        min-height: auto;
+        height: auto;
+        overflow: visible;
+    }
+
+    .submit-form-column {
+        min-height: 100%;
+        height: auto;
+        overflow-y: visible;
+        padding-right: 0;
+    }
+
+    .submit-card {
+        min-height: 0;
+    }
+
+    .submit-agent-shell {
+        height: auto;
+    }
+}
+
+.suggestion-values {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-top: 0.35rem;
+    flex-wrap: wrap;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.88rem;
+}
+
+.suggestion-old {
+    color: var(--text-secondary);
+}
+
+.suggestion-arrow {
+    color: var(--accent-primary);
+}
+
+.suggestion-new {
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+.suggestion-body p {
+    margin: 0.55rem 0 0;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    font-size: 0.9rem;
+}
+
+.loading-box {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 200px;
+    font-size: 1.25rem;
+    color: var(--text-secondary);
+}
+
+@media (max-width: 1280px) {
+    .submit-page {
+        grid-template-columns: 1fr;
+    }
+
+    .submit-agent-shell ::deep .chat-panel {
+        min-height: 540px;
+    }
+}
+
 @media (max-width: 768px) {
+    .submit-card {
+        padding: 1rem;
+        border-radius: 18px;
+    }
+
     .form-grid {
         grid-template-columns: 1fr;
+    }
+
+    .suggestion-head {
+        flex-direction: column;
+    }
+
+    .suggestion-actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .suggestion-action-btn {
+        width: 100%;
     }
 }

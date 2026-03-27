@@ -67,99 +67,26 @@
     </section>
 
     <aside class="chat-shell">
-        <section class="chat-panel">
-            <div class="chat-panel-glow"></div>
-
-            <div class="chat-head">
-                <div class="chat-head-main">
-                    <div class="chat-head-copy">
-                        <div class="chat-eyebrow">AI Agent</div>
-                        <h3>算例助手</h3>
-                    </div>
-                    <button type="button"
-                            class="chat-reset-btn"
-                            title="新建会话并清空当前上下文"
-                            aria-label="新建会话并清空当前上下文"
-                            disabled="@isChatBusy"
-                            @onclick="ResetChatContext">+</button>
-                </div>
-                <p>@AssistantReadyHint</p>
-            </div>
-
-            @if (!isReady)
-            {
-                <div class="chat-empty-state">加载算例详情后启用助手...</div>
-            }
-            else if (errorMessage != null || selectedCase is null)
-            {
-                <div class="chat-empty-state">当前算例详情不可用，助手暂时不可用。</div>
-            }
-            else
-            {
-                <div class="chat-messages">
-                    @foreach (var message in displayedChatMessages)
-                    {
-                        <div class="chat-row @(message.IsUser ? "chat-row-user" : "chat-row-agent")">
-                            <div class="chat-item @(message.IsUser ? "chat-user" : "chat-agent") @(message.IsWaiting ? "chat-waiting" : string.Empty)">
-                                <div class="chat-role">@(message.IsUser ? "你" : "助手")</div>
-                                @if (message.IsWaiting)
-                                {
-                                    <div class="chat-waiting-status" aria-live="polite">
-                                        <span class="chat-waiting-label">@message.Content</span>
-                                        <span class="chat-waiting-dots" aria-hidden="true">
-                                            <span></span>
-                                            <span></span>
-                                            <span></span>
-                                        </span>
-                                    </div>
-                                }
-                                else if (message.IsUser)
-                                {
-                                    <div class="chat-text user-text">@message.Content</div>
-                                }
-                                else
-                                {
-                                    <div class="chat-text markdown-text">@RenderAssistantMarkdown(ChatMessageFormatter.NormalizeAssistantContent(message.Content, message.ImageUrl))</div>
-                                }
-                                @if (!string.IsNullOrWhiteSpace(message.ImageUrl))
-                                {
-                                    <button type="button"
-                                            class="chat-image-trigger"
-                                            title="点击放大图片"
-                                            aria-label="放大图片"
-                                            @onclick="@(() => OpenImagePreview(message.ImageUrl))">
-                                        <img class="chat-image" src="@message.ImageUrl" alt="plot-image" />
-                                    </button>
-                                }
-                            </div>
-                        </div>
-                    }
-                </div>
-
-                <form class="chat-composer" @onsubmit="SendChatAsync">
-                    <textarea class="chat-input"
-                              placeholder="描述你要分析的问题..."
-                              @bind="chatInput"
-                              disabled="@isChatBusy"></textarea>
-
-                    <div class="chat-composer-footer">
-                        <div class="chat-shortcut-selector" aria-label="快捷指令">
-                            <select class="shortcut-select"
-                                    value="@selectedShortcut"
-                                    @onchange="OnShortcutSelected"
-                                    disabled="@isChatBusy">
-                                <option value="@ShortcutPlaceholder">选择快捷指令...</option>
-                                @foreach (var shortcut in ShortcutCommands)
-                                {
-                                    <option value="@shortcut">@shortcut</option>
-                                }
-                            </select>
-                        </div>
-                        <button type="submit" class="chat-send-btn" disabled="@isChatBusy">发送</button>
-                    </div>
-                </form>
-            }
-        </section>
+        <AgentChatSidebar Eyebrow="AI Agent"
+                          Title="算例助手"
+                          Subtitle="@AssistantReadyHint"
+                          EmptyStateText="@ChatEmptyStateText"
+                          ShowEmptyState="@ShowChatEmptyState"
+                          IsBusy="@isChatBusy"
+                          DraftMessage="@chatInput"
+                          DraftMessageChanged="HandleChatInputChanged"
+                          OnSend="SendChatAsync"
+                          OnReset="ResetChatContext"
+                          InputPlaceholder="描述你要分析的问题..."
+                          SendButtonText="发送"
+                          Shortcuts="ShortcutCommands"
+                          SelectedShortcut="@selectedShortcut"
+                          ShortcutPlaceholder="选择快捷指令..."
+                          ShortcutPlaceholderValue="@ShortcutPlaceholder"
+                          ShortcutChanged="OnShortcutSelected"
+                          Messages="displayedChatMessages"
+                          AssistantMarkupFactory="RenderAssistantChatMessage"
+                          ImageClicked="OpenImagePreview" />
     </aside>
 
     @if (!string.IsNullOrWhiteSpace(downloadUrl))
@@ -209,7 +136,7 @@
     private readonly CaseImagePreviewState imagePreviewState = new();
     private ElementReference imagePreviewDialogRef;
     private bool shouldFocusImagePreview;
-    private IReadOnlyList<CaseDetailChatDisplayItem> displayedChatMessages = Array.Empty<CaseDetailChatDisplayItem>();
+    private IReadOnlyList<AgentChatDisplayItem> displayedChatMessages = Array.Empty<AgentChatDisplayItem>();
     private static readonly MarkdownPipeline MarkdownPipeline = new MarkdownPipelineBuilder()
         .UseAdvancedExtensions()
         .DisableHtml()
@@ -355,6 +282,23 @@
         var html = Markdown.ToHtml(content ?? string.Empty, MarkdownPipeline);
         return new MarkupString(html);
     }
+
+    private static MarkupString RenderAssistantChatMessage(AgentChatDisplayItem message)
+    {
+        return RenderAssistantMarkdown(ChatMessageFormatter.NormalizeAssistantContent(message.Content, message.ImageUrl));
+    }
+
+    private Task HandleChatInputChanged(string value)
+    {
+        chatInput = value;
+        return Task.CompletedTask;
+    }
+
+    private bool ShowChatEmptyState => !isReady || errorMessage != null || selectedCase is null;
+
+    private string ChatEmptyStateText => !isReady
+        ? "加载算例详情后启用助手..."
+        : "当前算例详情不可用，助手暂时不可用。";
 
     private void RefreshDisplayedChatMessages()
     {

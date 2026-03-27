@@ -42,8 +42,10 @@ builder.Services.AddSingleton<IFreeSql>(sp =>
 
 builder.Services.AddSingleton<VmomInputCatalogService>();
 builder.Services.AddSingleton<VmomNamelistBuilder>();
+builder.Services.AddSingleton<VmomInputDraftService>();
 builder.Services.AddSingleton<IVmomCaseService, VmomCaseService>();
 builder.Services.AddScoped<ICaseDetailChatAgentService, CaseDetailChatAgentService>();
+builder.Services.AddScoped<ISubmitParameterChatAgentService, SubmitParameterChatAgentService>();
 builder.Services.AddHostedService<CaseStatusBroadcastService>();
 builder.Services.AddScoped<ClientSessionService>();
 builder.Services.AddScoped<ClientThemeService>();

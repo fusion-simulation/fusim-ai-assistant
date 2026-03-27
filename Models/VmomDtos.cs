@@ -61,3 +61,23 @@ public record CaseAgentChatResponse(
     string? ImageFileName,
     IReadOnlyList<string>? AvailableVariables,
     IReadOnlyList<string>? AvailableFiles);
+
+public record SubmitAgentProposedChange(
+    string FieldKey,
+    string CurrentValue,
+    string SuggestedValue,
+    string Reason);
+
+public record SubmitAgentChatRequest(
+    string Mode,
+    string Title,
+    string? InputContent,
+    IReadOnlyDictionary<string, string>? Fields,
+    string Message,
+    IReadOnlyList<CaseAgentChatMessage>? History);
+
+public record SubmitAgentChatResponse(
+    string Answer,
+    IReadOnlyList<SubmitAgentProposedChange> ProposedChanges,
+    string? NormalizedInputContent,
+    IReadOnlyDictionary<string, string>? NormalizedFields);
